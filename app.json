@@ -1,0 +1,10 @@
+{
+  "expo": {
+    "scheme": "acme",
+    "plugins": [
+      "expo-router"
+    ],
+    "name": "ticketing-system-mobile-app",
+    "slug": "ticketing-system-mobile-app"
+  }
+}
