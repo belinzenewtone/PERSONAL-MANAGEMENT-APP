@@ -1,13 +1,13 @@
 import { Tabs } from "expo-router";
 import { FloatingTabBar } from "../../components/ui/FloatingTabBar";
 
-export default function PortalLayout() {
+export default function AdminLayout() {
     return (
         <Tabs
             tabBar={(props) => <FloatingTabBar {...props} />}
             screenOptions={{
                 headerShown: false,
-                sceneStyle: { backgroundColor: 'hsl(224 71% 4%)' } // var(--background) equivalent
+                sceneStyle: { backgroundColor: 'hsl(224 71% 4%)' }
             }}
         >
             <Tabs.Screen
@@ -17,15 +17,27 @@ export default function PortalLayout() {
                 }}
             />
             <Tabs.Screen
-                name="tickets"
+                name="email"
                 options={{
-                    title: "Tickets", // Used to be my-tickets, left as tickets for now
+                    title: "Email",
                 }}
             />
             <Tabs.Screen
-                name="settings"
+                name="tasks"
                 options={{
-                    title: "Settings",
+                    title: "Tasks",
+                }}
+            />
+            <Tabs.Screen
+                name="tickets"
+                options={{
+                    title: "Tickets",
+                }}
+            />
+            <Tabs.Screen
+                name="more"
+                options={{
+                    title: "More", // Reports & Machines can go in here later
                 }}
             />
         </Tabs>

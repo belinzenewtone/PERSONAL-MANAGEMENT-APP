@@ -1,6 +1,6 @@
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
-import { Home, Ticket, Settings, Mail } from 'lucide-react-native';
+import { Home, Ticket, Settings, Mail, CheckSquare, MoreHorizontal } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
@@ -11,6 +11,8 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
         'tickets': Ticket,
         'email': Mail,
         'settings': Settings,
+        'tasks': CheckSquare,
+        'more': MoreHorizontal,
     };
 
     return (
@@ -46,7 +48,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                             accessibilityRole="button"
                             accessibilityState={isFocused ? { selected: true } : {}}
                             accessibilityLabel={options.tabBarAccessibilityLabel}
-                            testID={options.tabBarTestID}
+                            testID={(options as any).tabBarTestID}
                             onPress={onPress}
                             className={`items-center justify-center p-2 rounded-full min-w-[60px] ${isFocused ? 'bg-primary/20' : ''}`}
                         >
