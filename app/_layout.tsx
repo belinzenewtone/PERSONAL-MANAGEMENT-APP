@@ -7,6 +7,7 @@ export default function RootLayout() {
             <Stack.Screen name="index" />
             <Stack.Screen name="(portal)" />
             <Stack.Screen name="(auth)" />
+            <Stack.Screen name="report-issue" options={{ presentation: 'modal' }} />
         </Stack>
     );
 }
