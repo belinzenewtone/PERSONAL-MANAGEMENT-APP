@@ -35,6 +35,11 @@
     },
     "scheme": "personal-os",
     "plugins": [
+      ["expo-build-properties", {
+        "android": {
+          "gradleVersion": "8.10.2"
+        }
+      }],
       "expo-router",
       "expo-secure-store",
       "expo-background-fetch",
