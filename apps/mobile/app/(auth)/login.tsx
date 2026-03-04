@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -16,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService, SignInInput, signInSchema } from '../../src/features/auth/auth.service';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
+import { toast } from '../../src/components/ui/Toast';
+import { getErrorMessage } from '../../src/lib/error-handler';
 import { colors, spacing, fontSize, fontWeight } from '../../src/lib/theme';
 
 export default function LoginScreen() {
@@ -33,8 +34,8 @@ export default function LoginScreen() {
     try {
       await authService.signIn(data);
       router.replace('/(tabs)');
-    } catch (err: any) {
-      Alert.alert('Sign In Failed', err.message || 'Something went wrong');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   KeyboardAvoidingView,
   Platform,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -16,6 +15,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService, SignUpInput, signUpSchema } from '../../src/features/auth/auth.service';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
+import { toast } from '../../src/components/ui/Toast';
+import { getErrorMessage } from '../../src/lib/error-handler';
 import { colors, spacing, fontSize, fontWeight } from '../../src/lib/theme';
 
 export default function RegisterScreen() {
@@ -31,13 +32,10 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await authService.signUp(data);
-      Alert.alert(
-        'Account Created',
-        'Please check your email to verify your account.',
-        [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
-      );
-    } catch (err: any) {
-      Alert.alert('Sign Up Failed', err.message || 'Something went wrong');
+      toast.success('Account created! Check your email to verify.');
+      router.replace('/(auth)/login');
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

@@ -8,24 +8,24 @@ import { queryClient } from '../src/lib/query-client';
 import { supabase } from '../src/lib/supabase';
 import { useAuthStore } from '../src/store/auth.store';
 import { registerSmsBackgroundTask } from '../src/features/finance/sms-background.task';
+import { ErrorBoundary } from '../src/components/ui/ErrorBoundary';
+import { OfflineBanner } from '../src/components/ui/OfflineBanner';
+import { ToastContainer } from '../src/components/ui/Toast';
 import { StyleSheet } from 'react-native';
 
 export default function RootLayout() {
   const { setSession, setLoading } = useAuthStore();
 
   useEffect(() => {
-    // Get initial session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setLoading(false);
     });
 
-    // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
 
-    // Register background SMS task (Android only, silently fails in Expo Go)
     if (Platform.OS === 'android') {
       registerSmsBackgroundTask().catch(() => {});
     }
@@ -34,12 +34,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <GestureHandlerRootView style={styles.root}>
-      <QueryClientProvider client={queryClient}>
-        <StatusBar style="light" />
-        <Stack screenOptions={{ headerShown: false }} />
-      </QueryClientProvider>
-    </GestureHandlerRootView>
+    <ErrorBoundary>
+      <GestureHandlerRootView style={styles.root}>
+        <QueryClientProvider client={queryClient}>
+          <StatusBar style="light" />
+          <OfflineBanner />
+          <Stack screenOptions={{ headerShown: false }} />
+          <ToastContainer />
+        </QueryClientProvider>
+      </GestureHandlerRootView>
+    </ErrorBoundary>
   );
 }
 

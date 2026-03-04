@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView,
-  TouchableOpacity, Alert,
+  TouchableOpacity,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { authService } from '../../src/features/auth/auth.service';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
+import { toast } from '../../src/components/ui/Toast';
+import { getErrorMessage } from '../../src/lib/error-handler';
 import { colors, spacing, fontSize, fontWeight } from '../../src/lib/theme';
 
 const schema = z.object({ email: z.string().email('Enter a valid email') });
@@ -27,11 +29,10 @@ export default function ForgotPasswordScreen() {
     setLoading(true);
     try {
       await authService.resetPassword(email);
-      Alert.alert('Check your email', 'A password reset link has been sent.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
-    } catch (err: any) {
-      Alert.alert('Error', err.message);
+      toast.success('Reset link sent — check your email.');
+      router.back();
+    } catch (err: unknown) {
+      toast.error(getErrorMessage(err));
     } finally {
       setLoading(false);
     }

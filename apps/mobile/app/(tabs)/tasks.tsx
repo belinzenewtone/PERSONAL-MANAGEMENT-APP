@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, ActivityIndicator, Alert, TextInput as RNInput,
+  Modal, TextInput as RNInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
@@ -14,6 +14,8 @@ import {
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Card } from '../../src/components/ui/Card';
+import { TaskCardSkeleton } from '../../src/components/ui/Skeleton';
+import { toast } from '../../src/components/ui/Toast';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { Task, TaskCategory, TaskPriority, TaskStatus } from '@personal-os/types';
 
@@ -221,10 +223,9 @@ export default function TasksScreen() {
   };
 
   const handleDelete = (task: Task) => {
-    Alert.alert('Delete Task', `Delete "${task.title}"?`, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteTask.mutate(task.id) },
-    ]);
+    deleteTask.mutate(task.id, {
+      onSuccess: () => toast.info(`"${task.title}" deleted`),
+    });
   };
 
   return (
@@ -253,7 +254,9 @@ export default function TasksScreen() {
 
       {/* Tasks List */}
       {isLoading ? (
-        <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
+          {[0, 1, 2, 3].map((i) => <TaskCardSkeleton key={i} />)}
+        </ScrollView>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
           {filtered.length === 0 ? (

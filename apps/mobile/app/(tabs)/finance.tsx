@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, Alert, ActivityIndicator, Dimensions,
+  Modal, Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
@@ -20,6 +20,9 @@ import {
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
 import { Card } from '../../src/components/ui/Card';
+import { SmsImportModal } from '../../src/components/finance/SmsImportModal';
+import { FinanceSkeletonList } from '../../src/components/ui/Skeleton';
+import { toast } from '../../src/components/ui/Toast';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { Transaction, TransactionType, TransactionSource } from '@personal-os/types';
 
@@ -418,6 +421,7 @@ export default function FinanceScreen() {
   const [showModal, setShowModal]   = useState(false);
   const [editTx, setEditTx]         = useState<Transaction | null>(null);
   const [showEdit, setShowEdit]     = useState(false);
+  const [showSmsImport, setShowSmsImport] = useState(false);
 
   const { data: transactions = [], isLoading } = useTransactions(period);
   const deleteTx = useDeleteTransaction();
@@ -426,11 +430,9 @@ export default function FinanceScreen() {
   const grouped   = useMemo(() => groupByDate(transactions), [transactions]);
 
   const handleLongPress = (tx: Transaction) => {
-    Alert.alert(tx.category, tx.description ?? fmt(Number(tx.amount)), [
-      { text: 'Edit',   onPress: () => { setEditTx(tx); setShowEdit(true); } },
-      { text: 'Delete', style: 'destructive', onPress: () => deleteTx.mutate(tx.id) },
-      { text: 'Cancel', style: 'cancel' },
-    ]);
+    deleteTx.mutate(tx.id, {
+      onSuccess: () => toast.info('Transaction deleted'),
+    });
   };
 
   return (
@@ -438,7 +440,9 @@ export default function FinanceScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Finance</Text>
-        <Text style={styles.periodLabel}>{format(new Date(), 'MMMM yyyy')}</Text>
+        <TouchableOpacity onPress={() => setShowSmsImport(true)} style={styles.smsImportBtn}>
+          <Text style={styles.smsImportText}>📱 Import SMS</Text>
+        </TouchableOpacity>
       </View>
 
       {/* Period filter */}
@@ -458,7 +462,7 @@ export default function FinanceScreen() {
       </ScrollView>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        <FinanceSkeletonList />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
 
@@ -524,6 +528,8 @@ export default function FinanceScreen() {
           onClose={() => { setShowEdit(false); setEditTx(null); }}
         />
       )}
+
+      <SmsImportModal visible={showSmsImport} onClose={() => setShowSmsImport(false)} />
     </SafeAreaView>
   );
 }
@@ -539,6 +545,13 @@ const styles = StyleSheet.create({
   },
   screenTitle:  { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   periodLabel:  { fontSize: fontSize.sm, color: colors.textSecondary },
+  smsImportBtn: {
+    flexDirection: 'row', alignItems: 'center',
+    paddingVertical: spacing.xs, paddingHorizontal: spacing.sm,
+    backgroundColor: colors.surface, borderRadius: radius.md,
+    borderWidth: 1, borderColor: colors.border,
+  },
+  smsImportText: { fontSize: fontSize.xs, color: colors.accentLight, fontWeight: fontWeight.medium },
 
   filtersScroll:     { maxHeight: 44, marginTop: spacing.sm },
   filtersContainer:  { paddingHorizontal: spacing.md, gap: spacing.sm },

@@ -14,6 +14,8 @@ import { useAuthStore } from '../../src/store/auth.store';
 import { useTodayTasks } from '../../src/features/tasks/tasks.hooks';
 import { authService } from '../../src/features/auth/auth.service';
 import { Card } from '../../src/components/ui/Card';
+import { HomeSkeletonList } from '../../src/components/ui/Skeleton';
+import { SectionErrorBoundary } from '../../src/components/ui/ErrorBoundary';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { Task } from '@personal-os/types';
 
@@ -107,7 +109,7 @@ export default function HomeScreen() {
           </View>
 
           {isLoading ? (
-            <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.md }} />
+            <SectionErrorBoundary><HomeSkeletonList count={3} /></SectionErrorBoundary>
           ) : totalCount === 0 ? (
             <Text style={styles.emptyText}>No tasks due today 🎉</Text>
           ) : (
