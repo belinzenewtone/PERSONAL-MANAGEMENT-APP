@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -6,6 +7,7 @@ import { StatusBar } from 'expo-status-bar';
 import { queryClient } from '../src/lib/query-client';
 import { supabase } from '../src/lib/supabase';
 import { useAuthStore } from '../src/store/auth.store';
+import { registerSmsBackgroundTask } from '../src/features/finance/sms-background.task';
 import { StyleSheet } from 'react-native';
 
 export default function RootLayout() {
@@ -22,6 +24,11 @@ export default function RootLayout() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
     });
+
+    // Register background SMS task (Android only, silently fails in Expo Go)
+    if (Platform.OS === 'android') {
+      registerSmsBackgroundTask().catch(() => {});
+    }
 
     return () => subscription.unsubscribe();
   }, []);
