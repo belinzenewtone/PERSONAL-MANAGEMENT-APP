@@ -16,4 +16,12 @@ config.resolver.nodeModulesPaths = [
   path.resolve(projectRoot, 'node_modules'),
 ];
 
+// Monorepo: force resolution to a single instance of critical packages
+config.resolver.extraNodeModules = {
+  'react': path.resolve(projectRoot, 'node_modules/react'),
+  'react-native': path.resolve(projectRoot, 'node_modules/react-native'),
+  'react-native-safe-area-context': path.resolve(projectRoot, 'node_modules/react-native-safe-area-context'),
+  '@react-navigation/native': path.resolve(projectRoot, 'node_modules/@react-navigation/native'),
+};
+
 module.exports = withNativeWind(config, { input: './global.css' });
