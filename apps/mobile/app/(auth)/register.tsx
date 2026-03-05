@@ -22,6 +22,8 @@ import { colors, spacing, fontSize, fontWeight } from '../../src/lib/theme';
 export default function RegisterScreen() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const { control, handleSubmit, formState: { errors } } = useForm<SignUpInput>({
     resolver: zodResolver(signUpSchema),
@@ -84,12 +86,14 @@ export default function RegisterScreen() {
                 <TextInput
                   label="Password"
                   placeholder="••••••••"
-                  secureTextEntry
+                  secureTextEntry={!showPassword}
                   autoComplete="new-password"
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.password?.message}
+                  rightIcon={<Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>}
+                  onRightIconPress={() => setShowPassword((v) => !v)}
                 />
               )}
             />
@@ -101,11 +105,13 @@ export default function RegisterScreen() {
                 <TextInput
                   label="Confirm Password"
                   placeholder="••••••••"
-                  secureTextEntry
+                  secureTextEntry={!showConfirmPassword}
                   value={value}
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.confirmPassword?.message}
+                  rightIcon={<Text style={styles.eyeIcon}>{showConfirmPassword ? '🙈' : '👁'}</Text>}
+                  onRightIconPress={() => setShowConfirmPassword((v) => !v)}
                 />
               )}
             />
@@ -173,5 +179,8 @@ const styles = StyleSheet.create({
     color: colors.accentLight,
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
+  },
+  eyeIcon: {
+    fontSize: 18,
   },
 });

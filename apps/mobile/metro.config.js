@@ -12,8 +12,8 @@ config.watchFolders = [workspaceRoot];
 
 // Monorepo: resolve packages from both local and root node_modules
 config.resolver.nodeModulesPaths = [
-  path.resolve(projectRoot, 'node_modules'),
   path.resolve(workspaceRoot, 'node_modules'),
+  path.resolve(projectRoot, 'node_modules'),
 ];
 
 module.exports = withNativeWind(config, { input: './global.css' });
