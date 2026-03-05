@@ -7,7 +7,7 @@ import Constants from 'expo-constants';
 
 const IS_EXPO_GO = Constants.appOwnership === 'expo';
 
-const MS_1H  = 60 * 60 * 1000;
+const MS_1H = 60 * 60 * 1000;
 const MS_10M = 10 * 60 * 1000;
 
 // Lazy module reference — loaded once, only outside Expo Go
@@ -25,6 +25,8 @@ async function getN() {
           shouldShowAlert: true,
           shouldPlaySound: true,
           shouldSetBadge: true,
+          shouldShowBanner: true,
+          shouldShowList: true,
         }),
       });
       _handlerSet = true;
@@ -87,8 +89,8 @@ export async function scheduleTaskNotifications(task: {
   const deadline = new Date(task.deadline).getTime();
   await cancelTaskNotifications(task.id);
   await Promise.all([
-    scheduleIfFuture(`task-${task.id}-1h`,  deadline - MS_1H,  '⏰ Task due in 1 hour',       task.title),
-    scheduleIfFuture(`task-${task.id}-10m`, deadline - MS_10M, '🔴 Task due in 10 minutes',   task.title),
+    scheduleIfFuture(`task-${task.id}-1h`, deadline - MS_1H, '⏰ Task due in 1 hour', task.title),
+    scheduleIfFuture(`task-${task.id}-10m`, deadline - MS_10M, '🔴 Task due in 10 minutes', task.title),
   ]);
 }
 
@@ -111,8 +113,8 @@ export async function scheduleEventNotifications(event: {
   const startMs = new Date(event.start_time).getTime();
   await cancelEventNotifications(event.id);
   await Promise.all([
-    scheduleIfFuture(`event-${event.id}-1h`,  startMs - MS_1H,  '📅 Event in 1 hour',                event.title),
-    scheduleIfFuture(`event-${event.id}-10m`, startMs - MS_10M, '🔔 Event starting in 10 minutes',   event.title),
+    scheduleIfFuture(`event-${event.id}-1h`, startMs - MS_1H, '📅 Event in 1 hour', event.title),
+    scheduleIfFuture(`event-${event.id}-10m`, startMs - MS_10M, '🔔 Event starting in 10 minutes', event.title),
   ]);
 }
 
