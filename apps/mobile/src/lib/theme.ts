@@ -11,9 +11,9 @@ export const colors = {
   textMuted: '#64748b',
 
   // Accent
-  accent: '#6366f1', // Indigo
-  accentLight: '#818cf8',
-  accentDark: '#4f46e5',
+  accent: '#1877F2', // Nexus Blue
+  accentLight: '#4D9AFF',
+  accentDark: '#0D5BC4',
 
   // Status
   success: '#22c55e',

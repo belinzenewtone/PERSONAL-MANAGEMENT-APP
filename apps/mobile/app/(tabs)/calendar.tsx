@@ -13,11 +13,12 @@ import {
   subMonths, addWeeks, subWeeks, parseISO, isToday, addDays,
 } from 'date-fns';
 import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../src/features/calendar/calendar.hooks';
+import { useTasks } from '../../src/features/tasks/tasks.hooks';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Card } from '../../src/components/ui/Card';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
-import type { CalendarEvent, EventType } from '@personal-os/types';
+import type { CalendarEvent, EventType, Task } from '@personal-os/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -73,10 +74,11 @@ function EventChip({ event, onPress }: { event: CalendarEvent; onPress: () => vo
 // ─── Month View ───────────────────────────────────────────────────────────────
 
 function MonthView({
-  currentDate, events, selectedDate, onSelectDate, onEventPress,
+  currentDate, events, tasks, selectedDate, onSelectDate, onEventPress,
 }: {
   currentDate: Date;
   events: CalendarEvent[];
+  tasks: Task[];
   selectedDate: Date;
   onSelectDate: (d: Date) => void;
   onEventPress: (e: CalendarEvent) => void;
@@ -96,6 +98,18 @@ function MonthView({
     return map;
   }, [events]);
 
+  const tasksByDay = useMemo(() => {
+    const map: Record<string, Task[]> = {};
+    tasks.forEach((t) => {
+      if (t.deadline) {
+        const key = format(parseISO(t.deadline), 'yyyy-MM-dd');
+        if (!map[key]) map[key] = [];
+        map[key].push(t);
+      }
+    });
+    return map;
+  }, [tasks]);
+
   return (
     <View>
       <View style={styles.weekHeader}>
@@ -107,9 +121,11 @@ function MonthView({
         {days.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
           const dayEvents = eventsByDay[key] ?? [];
+          const dayTasks  = tasksByDay[key]  ?? [];
           const isSelected = isSameDay(day, selectedDate);
-          const todayDay = isToday(day);
-          const inMonth = isSameMonth(day, currentDate);
+          const todayDay   = isToday(day);
+          const inMonth    = isSameMonth(day, currentDate);
+          const totalDots  = dayEvents.length + dayTasks.length;
 
           return (
             <TouchableOpacity
@@ -131,15 +147,22 @@ function MonthView({
                   {format(day, 'd')}
                 </Text>
               </View>
-              {dayEvents.slice(0, 2).map((ev) => (
-                <TouchableOpacity
-                  key={ev.id}
-                  onPress={() => onEventPress(ev)}
-                  style={[styles.monthEventDot, { backgroundColor: EVENT_TYPE_CONFIG[ev.type].color }]}
-                />
-              ))}
-              {dayEvents.length > 2 && (
-                <Text style={styles.moreEvents}>+{dayEvents.length - 2}</Text>
+              <View style={styles.dotRow}>
+                {dayEvents.slice(0, 2).map((ev) => (
+                  <View
+                    key={ev.id}
+                    style={[styles.monthEventDot, { backgroundColor: EVENT_TYPE_CONFIG[ev.type].color }]}
+                  />
+                ))}
+                {dayTasks.slice(0, 2).map((t) => (
+                  <View
+                    key={t.id}
+                    style={[styles.monthEventDot, { backgroundColor: colors.warning }]}
+                  />
+                ))}
+              </View>
+              {totalDots > 4 && (
+                <Text style={styles.moreEvents}>+{totalDots - 4}</Text>
               )}
             </TouchableOpacity>
           );
@@ -428,6 +451,7 @@ export default function CalendarScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
 
   const { data: events = [], isLoading } = useEvents();
+  const { data: tasks = [] } = useTasks();
   const deleteEvent = useDeleteEvent();
 
   const navigate = (dir: 1 | -1) => {
@@ -451,6 +475,11 @@ export default function CalendarScreen() {
       .filter((e) => isSameDay(parseISO(e.start_time), selectedDate))
       .sort((a, b) => a.start_time.localeCompare(b.start_time)),
     [events, selectedDate]
+  );
+
+  const selectedDayTasks = useMemo(() =>
+    tasks.filter((t) => t.deadline && isSameDay(parseISO(t.deadline), selectedDate)),
+    [tasks, selectedDate]
   );
 
   const handleDeleteEvent = () => {
@@ -512,17 +541,33 @@ export default function CalendarScreen() {
               <MonthView
                 currentDate={currentDate}
                 events={events}
+                tasks={tasks}
                 selectedDate={selectedDate}
                 onSelectDate={setSelectedDate}
                 onEventPress={setDetailEvent}
               />
-              {selectedDayEvents.length > 0 && (
+              {(selectedDayEvents.length > 0 || selectedDayTasks.length > 0) && (
                 <View style={styles.selectedDayStrip}>
                   <Text style={styles.selectedDayTitle}>
                     {format(selectedDate, 'EEEE, MMMM d')}
                   </Text>
                   {selectedDayEvents.map((ev) => (
                     <EventChip key={ev.id} event={ev} onPress={() => setDetailEvent(ev)} />
+                  ))}
+                  {selectedDayTasks.map((task) => (
+                    <View
+                      key={task.id}
+                      style={[styles.taskChip, task.status === 'done' && styles.taskChipDone]}
+                    >
+                      <View style={[styles.taskChipDot, { backgroundColor: colors.warning }]} />
+                      <Text
+                        style={[styles.taskChipText, task.status === 'done' && styles.taskChipTextDone]}
+                        numberOfLines={1}
+                      >
+                        {task.title}
+                      </Text>
+                      <Text style={styles.taskChipBadge}>{task.priority}</Text>
+                    </View>
                   ))}
                 </View>
               )}
@@ -608,11 +653,26 @@ const styles = StyleSheet.create({
   dayNumberOutside: { color: colors.textMuted },
   dayNumberTodayText: { color: '#fff', fontWeight: fontWeight.bold },
   dayNumberSelectedText: { color: colors.accentLight },
-  monthEventDot: { width: 6, height: 6, borderRadius: 3, marginVertical: 1 },
+  dotRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center' },
+  monthEventDot: { width: 6, height: 6, borderRadius: 3 },
   moreEvents: { fontSize: 9, color: colors.textMuted },
 
   selectedDayStrip: { margin: spacing.md, gap: spacing.xs },
   selectedDayTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary, marginBottom: spacing.xs },
+
+  taskChip: {
+    flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
+    paddingHorizontal: spacing.sm, paddingVertical: 4,
+    borderRadius: radius.sm,
+    backgroundColor: colors.warning + '18',
+    borderLeftWidth: 3, borderLeftColor: colors.warning,
+    marginBottom: 2,
+  },
+  taskChipDone: { opacity: 0.5 },
+  taskChipDot: { width: 6, height: 6, borderRadius: 3 },
+  taskChipText: { flex: 1, fontSize: 11, fontWeight: fontWeight.medium, color: colors.textPrimary },
+  taskChipTextDone: { textDecorationLine: 'line-through', color: colors.textMuted },
+  taskChipBadge: { fontSize: 10, color: colors.textMuted, textTransform: 'capitalize' },
 
   // Event chip
   eventChip: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm, borderLeftWidth: 3, marginBottom: 2 },

@@ -17,6 +17,7 @@ import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { toast } from '../../src/components/ui/Toast';
 import { getErrorMessage } from '../../src/lib/error-handler';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, fontWeight } from '../../src/lib/theme';
 
 export default function RegisterScreen() {
@@ -92,7 +93,7 @@ export default function RegisterScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.password?.message}
-                  rightIcon={<Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>}
+                  rightIcon={<Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.textMuted} />}
                   onRightIconPress={() => setShowPassword((v) => !v)}
                 />
               )}
@@ -110,7 +111,7 @@ export default function RegisterScreen() {
                   onChangeText={onChange}
                   onBlur={onBlur}
                   error={errors.confirmPassword?.message}
-                  rightIcon={<Text style={styles.eyeIcon}>{showConfirmPassword ? '🙈' : '👁'}</Text>}
+                  rightIcon={<Ionicons name={showConfirmPassword ? 'eye-off' : 'eye'} size={20} color={colors.textMuted} />}
                   onRightIconPress={() => setShowConfirmPassword((v) => !v)}
                 />
               )}
@@ -180,7 +181,5 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: fontWeight.semibold,
   },
-  eyeIcon: {
-    fontSize: 18,
-  },
+
 });

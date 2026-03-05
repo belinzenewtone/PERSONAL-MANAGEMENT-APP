@@ -1,12 +1,6 @@
 import { Tabs } from 'expo-router';
-import { Text } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors } from '../../src/lib/theme';
-
-function TabIcon({ icon, focused }: { icon: string; focused: boolean }) {
-  return (
-    <Text style={{ fontSize: 22, opacity: focused ? 1 : 0.5 }}>{icon}</Text>
-  );
-}
 
 export default function TabsLayout() {
   return (
@@ -14,54 +8,79 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
+          position: 'absolute',
+          bottom: 20,
+          left: 20,
+          right: 20,
+          elevation: 10,
           backgroundColor: colors.surface,
-          borderTopColor: colors.border,
-          borderTopWidth: 1,
-          height: 60,
-          paddingBottom: 8,
+          borderRadius: 28,
+          borderTopWidth: 0,
+          height: 68,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: 8 },
+          shadowOpacity: 0.35,
+          shadowRadius: 16,
+          paddingBottom: 10,
           paddingTop: 8,
         },
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textMuted,
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '500',
-        },
+        tabBarLabelStyle: { fontSize: 10, fontWeight: '600', marginTop: -4 },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
           title: 'Home',
-          tabBarIcon: ({ focused }) => <TabIcon icon="🏠" focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="tasks"
         options={{
           title: 'Tasks',
-          tabBarIcon: ({ focused }) => <TabIcon icon="✅" focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'checkmark-done-circle' : 'checkmark-done-circle-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="calendar"
         options={{
           title: 'Calendar',
-          tabBarIcon: ({ focused }) => <TabIcon icon="📅" focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="finance"
         options={{
           title: 'Finance',
-          tabBarIcon: ({ focused }) => <TabIcon icon="💰" focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'wallet' : 'wallet-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="insights"
         options={{
           title: 'Insights',
-          tabBarIcon: ({ focused }) => <TabIcon icon="📊" focused={focused} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'bar-chart' : 'bar-chart-outline'} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person-circle' : 'person-circle-outline'} size={24} color={color} />
+          ),
         }}
       />
     </Tabs>

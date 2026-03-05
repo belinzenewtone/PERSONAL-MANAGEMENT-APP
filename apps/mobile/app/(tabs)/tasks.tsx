@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
-  Modal, TextInput as RNInput,
+  Modal, Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import {
-  useTasks, useCreateTask, useUpdateTaskStatus, useDeleteTask,
+  useTasks, useCreateTask, useUpdateTask, useUpdateTaskStatus, useDeleteTask,
 } from '../../src/features/tasks/tasks.hooks';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
@@ -26,38 +28,36 @@ const taskSchema = z.object({
   description: z.string().optional(),
   category: z.enum(['work', 'growth', 'personal']),
   priority: z.enum(['low', 'medium', 'high']),
-  deadline: z.string().optional(),
 });
 type TaskFormInput = z.infer<typeof taskSchema>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES: { value: TaskCategory; label: string; color: string }[] = [
-  { value: 'work', label: 'Work', color: colors.work },
-  { value: 'growth', label: 'Growth', color: colors.growth },
+  { value: 'work',     label: 'Work',     color: colors.work },
+  { value: 'growth',   label: 'Growth',   color: colors.growth },
   { value: 'personal', label: 'Personal', color: colors.personal },
 ];
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
-  { value: 'low', label: 'Low', color: colors.low },
+  { value: 'low',    label: 'Low',    color: colors.low },
   { value: 'medium', label: 'Medium', color: colors.medium },
-  { value: 'high', label: 'High', color: colors.high },
+  { value: 'high',   label: 'High',   color: colors.high },
 ];
 
 const TABS: { value: TaskCategory | 'all'; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'work', label: 'Work' },
-  { value: 'growth', label: 'Growth' },
+  { value: 'all',      label: 'All' },
+  { value: 'work',     label: 'Work' },
+  { value: 'growth',   label: 'Growth' },
   { value: 'personal', label: 'Personal' },
 ];
 
-const STATUS_ORDER: TaskStatus[] = ['todo', 'in_progress', 'done'];
-
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
-function TaskCard({ task, onToggle, onDelete }: {
+function TaskCard({ task, onToggle, onEdit, onDelete }: {
   task: Task;
   onToggle: () => void;
+  onEdit: () => void;
   onDelete: () => void;
 }) {
   const catColor = CATEGORIES.find((c) => c.value === task.category)?.color ?? colors.textMuted;
@@ -65,12 +65,15 @@ function TaskCard({ task, onToggle, onDelete }: {
   const isDone = task.status === 'done';
 
   return (
-    <TouchableOpacity onLongPress={onDelete} activeOpacity={0.85}>
+    <TouchableOpacity onPress={onEdit} onLongPress={onDelete} activeOpacity={0.85}>
       <Card style={[styles.taskCard, isDone && styles.taskCardDone]}>
         <View style={styles.taskRow}>
           {/* Checkbox */}
-          <TouchableOpacity onPress={onToggle} style={[styles.checkbox, isDone && styles.checkboxDone]}>
-            {isDone && <Text style={styles.checkmark}>✓</Text>}
+          <TouchableOpacity
+            onPress={onToggle}
+            style={[styles.checkbox, isDone && styles.checkboxDone]}
+          >
+            {isDone && <Ionicons name="checkmark" size={14} color="#fff" />}
           </TouchableOpacity>
 
           {/* Content */}
@@ -89,42 +92,81 @@ function TaskCard({ task, onToggle, onDelete }: {
                 <Text style={[styles.badgeText, { color: priColor }]}>{task.priority}</Text>
               </View>
               {task.deadline && (
-                <Text style={styles.deadline}>
-                  {format(new Date(task.deadline), 'MMM d')}
-                </Text>
+                <View style={styles.deadlineBadge}>
+                  <Ionicons name="calendar-outline" size={10} color={colors.textMuted} />
+                  <Text style={styles.deadlineText}>
+                    {format(new Date(task.deadline), 'MMM d')}
+                  </Text>
+                </View>
               )}
             </View>
           </View>
+
+          {/* Edit hint */}
+          <Ionicons name="pencil-outline" size={14} color={colors.textMuted} />
         </View>
       </Card>
     </TouchableOpacity>
   );
 }
 
-// ─── Add Task Modal ───────────────────────────────────────────────────────────
+// ─── Task Modal (Add & Edit) ──────────────────────────────────────────────────
 
-function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => void }) {
+function TaskModal({ visible, task, onClose }: {
+  visible: boolean;
+  task?: Task | null;
+  onClose: () => void;
+}) {
+  const isEditing = !!task;
   const createTask = useCreateTask();
+  const updateTask = useUpdateTask();
+
+  const [deadlineDate, setDeadlineDate] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+
   const { control, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<TaskFormInput>({
     resolver: zodResolver(taskSchema),
-    defaultValues: { category: 'work', priority: 'medium' },
+    defaultValues: {
+      title:       task?.title       ?? '',
+      description: task?.description ?? '',
+      category:    task?.category    ?? 'work',
+      priority:    task?.priority    ?? 'medium',
+    },
   });
+
+  // Re-populate form when task changes
+  useEffect(() => {
+    reset({
+      title:       task?.title       ?? '',
+      description: task?.description ?? '',
+      category:    task?.category    ?? 'work',
+      priority:    task?.priority    ?? 'medium',
+    });
+    setDeadlineDate(task?.deadline ? new Date(task.deadline) : null);
+  }, [task, visible]);
 
   const selectedCategory = watch('category');
   const selectedPriority = watch('priority');
 
   const onSubmit = async (data: TaskFormInput) => {
-    await createTask.mutateAsync({
-      title: data.title,
-      description: data.description ?? null,
-      category: data.category,
-      priority: data.priority,
-      deadline: data.deadline ? new Date(data.deadline).toISOString() : null,
-      status: 'todo',
-      estimated_minutes: null,
-      ticket_reference: null,
-      recurring: false,
-    });
+    const payload = {
+      title:              data.title,
+      description:        data.description ?? null,
+      category:           data.category,
+      priority:           data.priority,
+      deadline:           deadlineDate ? deadlineDate.toISOString() : null,
+      status:             (task?.status ?? 'todo') as TaskStatus,
+      estimated_minutes:  null,
+      ticket_reference:   null,
+      recurring:          false,
+    };
+
+    if (isEditing && task) {
+      await updateTask.mutateAsync({ id: task.id, ...payload });
+      toast.success('Task updated');
+    } else {
+      await createTask.mutateAsync(payload);
+    }
     reset();
     onClose();
   };
@@ -133,9 +175,9 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.modal}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>New Task</Text>
+          <Text style={styles.modalTitle}>{isEditing ? 'Edit Task' : 'New Task'}</Text>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.modalClose}>✕</Text>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
         </View>
 
@@ -144,8 +186,14 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
             control={control}
             name="title"
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput label="Title *" placeholder="What needs to be done?" value={value}
-                onChangeText={onChange} onBlur={onBlur} error={errors.title?.message} />
+              <TextInput
+                label="Title *"
+                placeholder="What needs to be done?"
+                value={value}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                error={errors.title?.message}
+              />
             )}
           />
 
@@ -153,8 +201,15 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
             control={control}
             name="description"
             render={({ field: { onChange, onBlur, value } }) => (
-              <TextInput label="Description" placeholder="Optional details..." value={value ?? ''}
-                onChangeText={onChange} onBlur={onBlur} multiline numberOfLines={3} />
+              <TextInput
+                label="Description"
+                placeholder="Optional details…"
+                value={value ?? ''}
+                onChangeText={onChange}
+                onBlur={onBlur}
+                multiline
+                numberOfLines={3}
+              />
             )}
           />
 
@@ -165,7 +220,13 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
               <TouchableOpacity
                 key={cat.value}
                 onPress={() => setValue('category', cat.value)}
-                style={[styles.chip, selectedCategory === cat.value && { backgroundColor: cat.color + '33', borderColor: cat.color }]}
+                style={[
+                  styles.chip,
+                  selectedCategory === cat.value && {
+                    backgroundColor: cat.color + '33',
+                    borderColor: cat.color,
+                  },
+                ]}
               >
                 <Text style={[styles.chipText, selectedCategory === cat.value && { color: cat.color }]}>
                   {cat.label}
@@ -181,7 +242,13 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
               <TouchableOpacity
                 key={pri.value}
                 onPress={() => setValue('priority', pri.value)}
-                style={[styles.chip, selectedPriority === pri.value && { backgroundColor: pri.color + '33', borderColor: pri.color }]}
+                style={[
+                  styles.chip,
+                  selectedPriority === pri.value && {
+                    backgroundColor: pri.color + '33',
+                    borderColor: pri.color,
+                  },
+                ]}
               >
                 <Text style={[styles.chipText, selectedPriority === pri.value && { color: pri.color }]}>
                   {pri.label}
@@ -190,10 +257,49 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
             ))}
           </View>
 
+          {/* Deadline */}
+          <Text style={styles.fieldLabel}>Deadline</Text>
+          <TouchableOpacity
+            style={styles.deadlineBtn}
+            onPress={() => setShowDatePicker(true)}
+            activeOpacity={0.7}
+          >
+            <Ionicons name="calendar-outline" size={16} color={colors.textMuted} />
+            <Text style={[styles.deadlineBtnText, deadlineDate && { color: colors.textPrimary }]}>
+              {deadlineDate ? format(deadlineDate, 'EEE, MMM d yyyy') : 'Set deadline (optional)'}
+            </Text>
+            {deadlineDate && (
+              <TouchableOpacity onPress={() => setDeadlineDate(null)} hitSlop={8}>
+                <Ionicons name="close-circle" size={16} color={colors.textMuted} />
+              </TouchableOpacity>
+            )}
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={deadlineDate ?? new Date()}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              minimumDate={new Date()}
+              onChange={(event, date) => {
+                if (Platform.OS === 'android') setShowDatePicker(false);
+                if (date) setDeadlineDate(date);
+              }}
+            />
+          )}
+          {Platform.OS === 'ios' && showDatePicker && (
+            <TouchableOpacity
+              style={styles.doneDateBtn}
+              onPress={() => setShowDatePicker(false)}
+            >
+              <Text style={styles.doneDateBtnText}>Done</Text>
+            </TouchableOpacity>
+          )}
+
           <Button
-            label="Create Task"
+            label={isEditing ? 'Save Changes' : 'Create Task'}
             onPress={handleSubmit(onSubmit)}
-            loading={createTask.isPending}
+            loading={createTask.isPending || updateTask.isPending}
             fullWidth
             size="lg"
             style={{ marginTop: spacing.md }}
@@ -208,7 +314,9 @@ function AddTaskModal({ visible, onClose }: { visible: boolean; onClose: () => v
 
 export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState<TaskCategory | 'all'>('all');
-  const [showModal, setShowModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [editTask, setEditTask] = useState<Task | null>(null);
+
   const { data: tasks, isLoading } = useTasks();
   const updateStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
@@ -237,8 +345,12 @@ export default function TasksScreen() {
       </View>
 
       {/* Tabs */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabsScroll}
-        contentContainerStyle={styles.tabsContainer}>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={styles.tabsScroll}
+        contentContainerStyle={styles.tabsContainer}
+      >
         {TABS.map((tab) => (
           <TouchableOpacity
             key={tab.value}
@@ -261,7 +373,7 @@ export default function TasksScreen() {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContent}>
           {filtered.length === 0 ? (
             <View style={styles.empty}>
-              <Text style={styles.emptyIcon}>✅</Text>
+              <Ionicons name="checkmark-done-circle-outline" size={48} color={colors.textMuted} />
               <Text style={styles.emptyText}>No tasks here</Text>
               <Text style={styles.emptySubtext}>Tap + to add a new task</Text>
             </View>
@@ -271,6 +383,7 @@ export default function TasksScreen() {
                 key={task.id}
                 task={task}
                 onToggle={() => handleToggle(task)}
+                onEdit={() => setEditTask(task)}
                 onDelete={() => handleDelete(task)}
               />
             ))
@@ -279,11 +392,24 @@ export default function TasksScreen() {
       )}
 
       {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
-        <Text style={styles.fabIcon}>+</Text>
+      <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
+        <Ionicons name="add" size={28} color="#fff" />
       </TouchableOpacity>
 
-      <AddTaskModal visible={showModal} onClose={() => setShowModal(false)} />
+      {/* Add Modal */}
+      <TaskModal
+        visible={showAddModal}
+        onClose={() => setShowAddModal(false)}
+      />
+
+      {/* Edit Modal */}
+      {editTask && (
+        <TaskModal
+          visible={!!editTask}
+          task={editTask}
+          onClose={() => setEditTask(null)}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -299,15 +425,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     paddingBottom: spacing.sm,
   },
-  screenTitle: {
-    fontSize: fontSize.xxl,
-    fontWeight: fontWeight.bold,
-    color: colors.textPrimary,
-  },
-  taskCount: { fontSize: fontSize.sm, color: colors.textSecondary },
+  screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  taskCount:   { fontSize: fontSize.sm, color: colors.textSecondary },
 
-  tabsScroll: { maxHeight: 44 },
-  tabsContainer: { paddingHorizontal: spacing.md, gap: spacing.sm },
+  tabsScroll:     { maxHeight: 44 },
+  tabsContainer:  { paddingHorizontal: spacing.md, gap: spacing.sm },
   tab: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -315,58 +437,47 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tabActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  tabActive:     { backgroundColor: colors.accent, borderColor: colors.accent },
+  tabText:       { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   tabTextActive: { color: '#fff' },
 
-  listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 100 },
+  listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 110 },
 
-  taskCard: { marginBottom: 0 },
-  taskCardDone: { opacity: 0.6 },
-  taskRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm },
+  taskCard:     { marginBottom: 0 },
+  taskCardDone: { opacity: 0.55 },
+  taskRow:      { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 1,
+    width: 22, height: 22, borderRadius: radius.sm,
+    borderWidth: 2, borderColor: colors.border,
+    alignItems: 'center', justifyContent: 'center',
+    flexShrink: 0,
   },
   checkboxDone: { backgroundColor: colors.accent, borderColor: colors.accent },
-  checkmark: { color: '#fff', fontSize: 13, fontWeight: fontWeight.bold },
-  taskBody: { flex: 1 },
-  taskTitle: { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.textPrimary },
+  taskBody:      { flex: 1 },
+  taskTitle:     { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.textPrimary },
   taskTitleDone: { textDecorationLine: 'line-through', color: colors.textMuted },
-  taskDesc: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  taskMeta: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs, flexWrap: 'wrap', alignItems: 'center' },
-  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
-  badgeText: { fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
-  deadline: { fontSize: 11, color: colors.textMuted },
+  taskDesc:      { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  taskMeta:      { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs, flexWrap: 'wrap', alignItems: 'center' },
+  badge:         { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
+  badgeText:     { fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
+  deadlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
+  deadlineText:  { fontSize: 11, color: colors.textMuted },
 
-  empty: { alignItems: 'center', paddingTop: spacing.xxl },
-  emptyIcon: { fontSize: 48, marginBottom: spacing.md },
-  emptyText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
-  emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
+  empty:        { alignItems: 'center', paddingTop: spacing.xxl, gap: spacing.sm },
+  emptyText:    { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted },
 
   fab: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: spacing.lg,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    bottom: 100,
+    width: 56, height: 56, borderRadius: 28,
     backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.accent,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
+    shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
   },
-  fabIcon: { fontSize: 28, color: '#fff', lineHeight: 32 },
 
   // Modal
   modal: { flex: 1, backgroundColor: colors.background },
@@ -378,8 +489,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  modalClose: { fontSize: fontSize.lg, color: colors.textSecondary },
+  modalTitle:  { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   modalScroll: { padding: spacing.lg, gap: spacing.md },
 
   fieldLabel: {
@@ -398,4 +508,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surface,
   },
   chipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+
+  deadlineBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+  },
+  deadlineBtnText: { flex: 1, fontSize: fontSize.md, color: colors.textMuted },
+
+  doneDateBtn: {
+    alignSelf: 'flex-end',
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.accent,
+    borderRadius: radius.md,
+    marginTop: spacing.xs,
+  },
+  doneDateBtnText: { color: '#fff', fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
 });

@@ -17,6 +17,7 @@ import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { toast } from '../../src/components/ui/Toast';
 import { getErrorMessage } from '../../src/lib/error-handler';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, spacing, fontSize, fontWeight } from '../../src/lib/theme';
 
 export default function LoginScreen() {
@@ -93,7 +94,7 @@ export default function LoginScreen() {
                   onBlur={onBlur}
                   error={errors.password?.message}
                   rightIcon={
-                    <Text style={styles.eyeIcon}>{showPassword ? '🙈' : '👁'}</Text>
+                    <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color={colors.textMuted} />
                   }
                   onRightIconPress={() => setShowPassword((v) => !v)}
                 />
@@ -171,9 +172,7 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.accentLight,
   },
-  eyeIcon: {
-    fontSize: 18,
-  },
+
   footer: {
     flexDirection: 'row',
     justifyContent: 'center',
