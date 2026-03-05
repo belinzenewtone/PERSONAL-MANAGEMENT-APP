@@ -9,6 +9,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format, parseISO, startOfMonth, subMonths } from 'date-fns';
 import { BarChart } from 'react-native-chart-kit';
+import { Ionicons } from '@expo/vector-icons';
 import { useAiInsights } from '../../src/features/insights/insights.hooks';
 import { InsightCard } from '../../src/features/insights/insights.service';
 import { useLearningSessions, useCreateSession, useToggleSession, useDeleteSession } from '../../src/features/learning/learning.hooks';
@@ -17,7 +18,7 @@ import { useTasks } from '../../src/features/tasks/tasks.hooks';
 import { useTransactions } from '../../src/features/finance/finance.hooks';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
-import { Card } from '../../src/components/ui/Card';
+import { GlassCard } from '../../src/components/ui/GlassCard';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { LearningSession } from '@personal-os/types';
 
@@ -27,9 +28,9 @@ const CHART_W = W - spacing.md * 2 - spacing.md * 2 - 2;
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const sessionSchema = z.object({
-  topic:            z.string().min(1, 'Topic required'),
+  topic: z.string().min(1, 'Topic required'),
   duration_minutes: z.string().refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter minutes'),
-  completed:        z.boolean(),
+  completed: z.boolean(),
 });
 type SessionInput = z.infer<typeof sessionSchema>;
 
@@ -37,11 +38,11 @@ type SessionInput = z.infer<typeof sessionSchema>;
 
 const PRIORITY_COLOR = { high: colors.danger, medium: colors.warning, low: colors.success };
 const TYPE_BG: Record<InsightCard['type'], string> = {
-  spending:     colors.danger   + '22',
-  productivity: colors.accent   + '22',
-  learning:     colors.growth   + '22',
-  forecast:     colors.info     + '22',
-  tip:          colors.success  + '22',
+  spending: colors.danger + '22',
+  productivity: colors.accent + '22',
+  learning: colors.growth + '22',
+  forecast: colors.info + '22',
+  tip: colors.success + '22',
 };
 const TYPE_ICON: Record<InsightCard['type'], string> = {
   spending: '💸', productivity: '✅', learning: '📚', forecast: '🔮', tip: '💡',
@@ -55,7 +56,7 @@ function AiCard({ card }: { card: InsightCard }) {
 
   return (
     <TouchableOpacity onPress={() => setExpanded((v) => !v)} activeOpacity={0.85}>
-      <View style={[styles.aiCard, { backgroundColor: TYPE_BG[card.type], borderLeftColor: priColor }]}>
+      <GlassCard style={[styles.aiCard, { borderLeftColor: priColor, borderLeftWidth: 4 }]}>
         <View style={styles.aiCardHeader}>
           <Text style={styles.aiCardIcon}>{card.icon ?? TYPE_ICON[card.type]}</Text>
           <View style={styles.aiCardMeta}>
@@ -64,10 +65,10 @@ function AiCard({ card }: { card: InsightCard }) {
               <Text style={[styles.priorityPillText, { color: priColor }]}>{card.priority}</Text>
             </View>
           </View>
-          <Text style={styles.expandChevron}>{expanded ? '▲' : '▼'}</Text>
+          <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
         </View>
         {expanded && <Text style={styles.aiCardBody}>{card.body}</Text>}
-      </View>
+      </GlassCard>
     </TouchableOpacity>
   );
 }
@@ -78,14 +79,14 @@ function TaskCompletionChart({ tasks }: { tasks: any[] }) {
   const stats = useMemo(() => {
     const cats = ['work', 'growth', 'personal'] as const;
     return cats.map((c) => {
-      const sub   = tasks.filter((t) => t.category === c);
-      const done  = sub.filter((t) => t.status === 'done').length;
+      const sub = tasks.filter((t) => t.category === c);
+      const done = sub.filter((t) => t.status === 'done').length;
       return { label: c[0].toUpperCase() + c.slice(1), rate: sub.length > 0 ? Math.round((done / sub.length) * 100) : 0 };
     });
   }, [tasks]);
 
   return (
-    <Card style={styles.chartCard}>
+    <GlassCard style={styles.chartCard}>
       <Text style={styles.chartTitle}>Task Completion Rate</Text>
       {stats.map(({ label, rate }) => (
         <View key={label} style={styles.completionRow}>
@@ -99,7 +100,7 @@ function TaskCompletionChart({ tasks }: { tasks: any[] }) {
           <Text style={styles.completionPct}>{rate}%</Text>
         </View>
       ))}
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -110,7 +111,7 @@ function MonthlySpendChart({ transactions }: { transactions: any[] }) {
     const months = Array.from({ length: 4 }, (_, i) => subMonths(new Date(), 3 - i));
     return months.map((m) => {
       const start = startOfMonth(m).toISOString();
-      const end   = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59).toISOString();
+      const end = new Date(m.getFullYear(), m.getMonth() + 1, 0, 23, 59, 59).toISOString();
       const total = transactions
         .filter((t) => t.type === 'expense' && t.transaction_date >= start && t.transaction_date <= end)
         .reduce((s: number, t: any) => s + Number(t.amount), 0);
@@ -122,11 +123,11 @@ function MonthlySpendChart({ transactions }: { transactions: any[] }) {
   if (!hasData) return null;
 
   return (
-    <Card style={styles.chartCard}>
+    <GlassCard style={styles.chartCard}>
       <Text style={styles.chartTitle}>Monthly Spending (4 months)</Text>
       <BarChart
         data={{
-          labels:   monthlyData.map((m) => m.label),
+          labels: monthlyData.map((m) => m.label),
           datasets: [{ data: monthlyData.map((m) => m.total) }],
         }}
         width={CHART_W}
@@ -134,19 +135,19 @@ function MonthlySpendChart({ transactions }: { transactions: any[] }) {
         yAxisLabel="KES "
         yAxisSuffix=""
         chartConfig={{
-          backgroundColor:         colors.surface,
-          backgroundGradientFrom:  colors.surface,
-          backgroundGradientTo:    colors.surface,
-          decimalPlaces:           0,
-          color: (opacity = 1)  => `rgba(99,102,241,${opacity})`,
-          labelColor:              () => colors.textMuted,
-          propsForBackgroundLines: { stroke: colors.border + '55' },
+          backgroundColor: 'transparent',
+          backgroundGradientFrom: 'rgba(255,255,255,0)',
+          backgroundGradientTo: 'rgba(255,255,255,0)',
+          decimalPlaces: 0,
+          color: (opacity = 1) => colors.accentLight,
+          labelColor: () => colors.textMuted,
+          propsForBackgroundLines: { stroke: colors.border + '33' },
         }}
         style={{ borderRadius: radius.md, marginLeft: -spacing.sm }}
         showValuesOnTopOfBars
         withInnerLines={false}
       />
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -154,16 +155,16 @@ function MonthlySpendChart({ transactions }: { transactions: any[] }) {
 
 function LearningHoursChart({ sessions }: { sessions: LearningSession[] }) {
   const weekData = useMemo(() => learningService.getWeeklyHours(sessions), [sessions]);
-  const hasData  = weekData.some((d) => d.hours > 0);
+  const hasData = weekData.some((d) => d.hours > 0);
 
   if (!hasData) return null;
 
   return (
-    <Card style={styles.chartCard}>
+    <GlassCard style={styles.chartCard}>
       <Text style={styles.chartTitle}>Weekly Learning Hours</Text>
       <BarChart
         data={{
-          labels:   weekData.map((d) => d.day),
+          labels: weekData.map((d) => d.day),
           datasets: [{ data: weekData.map((d) => d.hours) }],
         }}
         width={CHART_W}
@@ -171,18 +172,18 @@ function LearningHoursChart({ sessions }: { sessions: LearningSession[] }) {
         yAxisLabel=""
         yAxisSuffix="h"
         chartConfig={{
-          backgroundColor:         colors.surface,
-          backgroundGradientFrom:  colors.surface,
-          backgroundGradientTo:    colors.surface,
-          decimalPlaces:           1,
-          color: (opacity = 1)  => `rgba(168,85,247,${opacity})`,
-          labelColor:              () => colors.textMuted,
-          propsForBackgroundLines: { stroke: colors.border + '55' },
+          backgroundColor: 'transparent',
+          backgroundGradientFrom: 'rgba(255,255,255,0)',
+          backgroundGradientTo: 'rgba(255,255,255,0)',
+          decimalPlaces: 1,
+          color: (opacity = 1) => colors.growth,
+          labelColor: () => colors.textMuted,
+          propsForBackgroundLines: { stroke: colors.border + '33' },
         }}
         style={{ borderRadius: radius.md, marginLeft: -spacing.sm }}
         withInnerLines={false}
       />
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -197,9 +198,9 @@ function AddSessionModal({ visible, onClose }: { visible: boolean; onClose: () =
 
   const onSubmit = async (data: SessionInput) => {
     await create.mutateAsync({
-      topic:            data.topic,
+      topic: data.topic,
       duration_minutes: Number(data.duration_minutes),
-      completed:        data.completed,
+      completed: data.completed,
     });
     reset();
     onClose();
@@ -209,9 +210,11 @@ function AddSessionModal({ visible, onClose }: { visible: boolean; onClose: () =
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
       <View style={styles.modal}>
         <View style={styles.modalHeader}>
-          <TouchableOpacity onPress={onClose}><Text style={styles.modalClose}>✕</Text></TouchableOpacity>
+          <TouchableOpacity onPress={onClose}>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
+          </TouchableOpacity>
           <Text style={styles.modalTitle}>Log Learning Session</Text>
-          <View style={{ width: 40 }} />
+          <View style={{ width: 24 }} />
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.modalScroll}>
           <Controller control={control} name="topic"
@@ -248,14 +251,14 @@ function SessionItem({ session, onToggle, onDelete }: {
     <TouchableOpacity onLongPress={onDelete} style={styles.sessionRow}>
       <TouchableOpacity onPress={onToggle}
         style={[styles.sessionCheck, session.completed && styles.sessionCheckDone]}>
-        {session.completed && <Text style={styles.checkmark}>✓</Text>}
+        {session.completed && <Ionicons name="checkmark" size={14} color="#fff" />}
       </TouchableOpacity>
       <View style={styles.sessionBody}>
         <Text style={[styles.sessionTopic, session.completed && styles.sessionDone]}>{session.topic}</Text>
         <Text style={styles.sessionMeta}>{dur}  ·  {format(parseISO(session.created_at), 'MMM d')}</Text>
       </View>
-      <View style={[styles.sessionDurBadge, session.completed && { backgroundColor: colors.success + '22' }]}>
-        <Text style={[styles.sessionDurText, session.completed && { color: colors.success }]}>{dur}</Text>
+      <View style={[styles.sessionDurBadge, { backgroundColor: session.completed ? colors.success + '22' : 'rgba(255,255,255,0.05)' }]}>
+        <Text style={[styles.sessionDurText, { color: session.completed ? colors.success : colors.textSecondary }]}>{dur}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -265,11 +268,11 @@ function SessionItem({ session, onToggle, onDelete }: {
 
 export default function InsightsScreen() {
   const [showAddSession, setShowAddSession] = useState(false);
-  const [activeTab, setActiveTab]           = useState<'ai' | 'analytics' | 'learning'>('ai');
+  const [activeTab, setActiveTab] = useState<'ai' | 'analytics' | 'learning'>('ai');
 
-  const { data: aiData,    isLoading: aiLoading,    refetch: refetchAi, error: aiError } = useAiInsights();
+  const { data: aiData, isLoading: aiLoading, refetch: refetchAi, error: aiError } = useAiInsights();
   const { data: sessions = [] } = useLearningSessions(30);
-  const { data: tasks    = [] } = useTasks();
+  const { data: tasks = [] } = useTasks();
   const { data: transactions = [] } = useTransactions('all');
 
   const toggleSession = useToggleSession();
@@ -289,9 +292,9 @@ export default function InsightsScreen() {
   };
 
   const TABS = [
-    { key: 'ai',        label: '🤖 AI',        },
+    { key: 'ai', label: '🤖 AI', },
     { key: 'analytics', label: '📊 Analytics', },
-    { key: 'learning',  label: '📚 Learning',  },
+    { key: 'learning', label: '📚 Learning', },
   ] as const;
 
   return (
@@ -300,13 +303,15 @@ export default function InsightsScreen() {
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Insights</Text>
         {activeTab === 'learning' && (
-          <TouchableOpacity onPress={() => setShowAddSession(true)} style={styles.addBtn}>
-            <Text style={styles.addBtnText}>+ Log</Text>
+          <TouchableOpacity onPress={() => setShowAddSession(true)} style={styles.headerBtn}>
+            <Ionicons name="add" size={18} color={colors.accentLight} />
+            <Text style={styles.headerBtnText}>Log</Text>
           </TouchableOpacity>
         )}
         {activeTab === 'ai' && (
-          <TouchableOpacity onPress={() => refetchAi()} style={styles.addBtn}>
-            <Text style={styles.addBtnText}>↻ Refresh</Text>
+          <TouchableOpacity onPress={() => refetchAi()} style={styles.headerBtn}>
+            <Ionicons name="refresh" size={18} color={colors.accentLight} />
+            <Text style={styles.headerBtnText}>Sync</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -333,31 +338,31 @@ export default function InsightsScreen() {
                 <Text style={styles.loadingSubtext}>Analysing your finance, tasks & learning data</Text>
               </View>
             ) : aiError ? (
-              <Card style={styles.errorCard}>
-                <Text style={styles.errorIcon}>⚠️</Text>
+              <GlassCard style={styles.errorCard}>
+                <Ionicons name="warning" size={48} color={colors.danger} />
                 <Text style={styles.errorTitle}>Insights unavailable</Text>
                 <Text style={styles.errorBody}>
                   {(aiError as Error).message?.includes('OPENAI_API_KEY')
-                    ? 'Set your OPENAI_API_KEY secret in Supabase Dashboard → Edge Functions → Secrets.'
-                    : (aiError as Error).message ?? 'Could not load AI insights. Please try again.'}
+                    ? 'Set your OPENAI_API_KEY secret in Supabase Dashboard.'
+                    : (aiError as Error).message ?? 'Could not load AI insights.'}
                 </Text>
                 <Button label="Retry" onPress={() => refetchAi()} variant="secondary" style={{ marginTop: spacing.sm }} />
-              </Card>
+              </GlassCard>
             ) : aiData ? (
               <>
                 {/* Summary bar */}
-                <Card style={styles.dataSummary}>
+                <GlassCard style={styles.dataSummary}>
                   {[
-                    { label: 'Transactions', val: aiData.data_summary.transactions_analysed },
-                    { label: 'Tasks',        val: aiData.data_summary.tasks_analysed },
-                    { label: 'Sessions',     val: aiData.data_summary.sessions_analysed },
+                    { label: 'Spending', val: aiData.data_summary.transactions_analysed },
+                    { label: 'Tasks', val: aiData.data_summary.tasks_analysed },
+                    { label: 'Learning', val: aiData.data_summary.sessions_analysed },
                   ].map(({ label, val }) => (
                     <View key={label} style={styles.dataSummaryStat}>
                       <Text style={styles.dataSummaryVal}>{val}</Text>
                       <Text style={styles.dataSummaryLabel}>{label}</Text>
                     </View>
                   ))}
-                </Card>
+                </GlassCard>
                 <Text style={styles.generatedAt}>
                   Generated {format(parseISO(aiData.generated_at), 'MMM d · h:mm a')}
                 </Text>
@@ -378,10 +383,10 @@ export default function InsightsScreen() {
 
         {/* ── ANALYTICS TAB ── */}
         {activeTab === 'analytics' && (
-          <>
+          <View style={{ gap: spacing.md }}>
             <TaskCompletionChart tasks={tasks} />
-            <MonthlySpendChart   transactions={transactions} />
-            <LearningHoursChart  sessions={sessions} />
+            <MonthlySpendChart transactions={transactions} />
+            <LearningHoursChart sessions={sessions} />
             {tasks.length === 0 && transactions.length === 0 && (
               <View style={styles.centered}>
                 <Text style={styles.emptyIcon}>📊</Text>
@@ -389,7 +394,7 @@ export default function InsightsScreen() {
                 <Text style={styles.emptySubtext}>Charts will appear as you add tasks and transactions</Text>
               </View>
             )}
-          </>
+          </View>
         )}
 
         {/* ── LEARNING TAB ── */}
@@ -397,31 +402,34 @@ export default function InsightsScreen() {
           <>
             {/* Stats row */}
             <View style={styles.learningStats}>
-              <Card style={styles.learningStat}>
+              <GlassCard style={styles.learningStat}>
                 <Text style={styles.learningStatVal}>{totalHours}h</Text>
                 <Text style={styles.learningStatLabel}>Total (30d)</Text>
-              </Card>
-              <Card style={styles.learningStat}>
+              </GlassCard>
+              <GlassCard style={styles.learningStat}>
                 <Text style={[styles.learningStatVal, { color: colors.success }]}>{completedSessions}</Text>
                 <Text style={styles.learningStatLabel}>Completed</Text>
-              </Card>
-              <Card style={styles.learningStat}>
+              </GlassCard>
+              <GlassCard style={styles.learningStat}>
                 <Text style={[styles.learningStatVal, { color: colors.accent }]}>{sessions.length}</Text>
-                <Text style={styles.learningStatLabel}>Sessions</Text>
-              </Card>
+                <Text style={styles.learningStatLabel}>Total</Text>
+              </GlassCard>
             </View>
 
             <LearningHoursChart sessions={sessions} />
 
-            <Text style={styles.sectionTitle}>Recent Sessions</Text>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Recent Sessions</Text>
+            </View>
+
             {sessions.length === 0 ? (
               <View style={styles.centered}>
                 <Text style={styles.emptyIcon}>📚</Text>
                 <Text style={styles.emptyText}>No sessions yet</Text>
-                <Text style={styles.emptySubtext}>Tap "+ Log" to record a study session</Text>
+                <Text style={styles.emptySubtext}>Tap "Log" to record a study session</Text>
               </View>
             ) : (
-              <Card style={styles.sessionList}>
+              <GlassCard style={styles.sessionList}>
                 {sessions.slice(0, 15).map((s, i) => (
                   <View key={s.id}>
                     <SessionItem
@@ -432,7 +440,7 @@ export default function InsightsScreen() {
                     {i < sessions.slice(0, 15).length - 1 && <View style={styles.divider} />}
                   </View>
                 ))}
-              </Card>
+              </GlassCard>
             )}
           </>
         )}
@@ -451,80 +459,102 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingTop: spacing.sm,
+    marginBottom: spacing.sm,
   },
   screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  addBtn:      { paddingVertical: spacing.xs, paddingHorizontal: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.md, borderWidth: 1, borderColor: colors.border },
-  addBtnText:  { fontSize: fontSize.sm, color: colors.accentLight, fontWeight: fontWeight.medium },
+  headerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  headerBtnText: { fontSize: fontSize.xs, color: colors.accentLight, fontWeight: fontWeight.medium },
 
-  tabs: { flexDirection: 'row', marginHorizontal: spacing.md, marginTop: spacing.sm, backgroundColor: colors.surface, borderRadius: radius.md, padding: 3 },
-  tab:         { flex: 1, paddingVertical: 7, alignItems: 'center', borderRadius: radius.sm },
-  tabActive:   { backgroundColor: colors.accent },
-  tabText:     { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  tabs: {
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: radius.md,
+    padding: 3,
+    marginBottom: spacing.md,
+  },
+  tab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: radius.sm },
+  tabActive: { backgroundColor: colors.accent },
+  tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   tabTextActive: { color: '#fff' },
 
-  scroll: { padding: spacing.md, paddingBottom: 100, gap: spacing.md },
+  scroll: { paddingHorizontal: spacing.md, paddingBottom: 100, gap: spacing.md },
 
   // AI Cards
-  aiCard: { borderRadius: radius.lg, padding: spacing.md, borderLeftWidth: 4, marginBottom: 0 },
+  aiCard: { padding: spacing.md, marginBottom: 0, overflow: 'hidden' },
   aiCardHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  aiCardIcon:   { fontSize: 28, width: 36 },
-  aiCardMeta:   { flex: 1, gap: 3 },
-  aiCardTitle:  { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  aiCardBody:   { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginTop: spacing.sm },
-  expandChevron:{ fontSize: fontSize.xs, color: colors.textMuted },
-  priorityPill: { alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.full },
-  priorityPillText: { fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
+  aiCardIcon: { fontSize: 24, width: 32 },
+  aiCardMeta: { flex: 1, gap: 2 },
+  aiCardTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  aiCardBody: { fontSize: fontSize.sm, color: colors.textSecondary, lineHeight: 20, marginTop: spacing.md },
+  priorityPill: { alignSelf: 'flex-start', paddingHorizontal: 6, paddingVertical: 1, borderRadius: radius.sm },
+  priorityPillText: { fontSize: 9, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
 
-  dataSummary: { flexDirection: 'row', paddingVertical: spacing.sm },
-  dataSummaryStat:  { flex: 1, alignItems: 'center' },
-  dataSummaryVal:   { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.accent },
-  dataSummaryLabel: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
-  generatedAt:      { fontSize: fontSize.xs, color: colors.textMuted, textAlign: 'center' },
+  dataSummary: { flexDirection: 'row', paddingVertical: spacing.md, marginBottom: 0 },
+  dataSummaryStat: { flex: 1, alignItems: 'center' },
+  dataSummaryVal: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.accentLight },
+  dataSummaryLabel: { fontSize: 10, color: colors.textMuted, marginTop: 2, textTransform: 'uppercase' },
+  generatedAt: { fontSize: 10, color: colors.textMuted, textAlign: 'center', marginBottom: -4 },
 
   // Charts
-  chartCard:  { gap: spacing.sm },
-  chartTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
+  chartCard: { gap: spacing.md },
+  chartTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary, textTransform: 'uppercase', letterSpacing: 0.5 },
   completionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  completionLabel: { width: 64, fontSize: fontSize.sm, color: colors.textSecondary },
-  completionBar:   { flex: 1, height: 8, backgroundColor: colors.border, borderRadius: radius.full, overflow: 'hidden' },
-  completionFill:  { height: '100%', borderRadius: radius.full },
-  completionPct:   { width: 36, fontSize: fontSize.xs, color: colors.textPrimary, textAlign: 'right', fontWeight: fontWeight.medium },
+  completionLabel: { width: 64, fontSize: fontSize.xs, color: colors.textSecondary },
+  completionBar: { flex: 1, height: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: radius.full, overflow: 'hidden' },
+  completionFill: { height: '100%', borderRadius: radius.full },
+  completionPct: { width: 32, fontSize: fontSize.xs, color: colors.textPrimary, textAlign: 'right', fontWeight: fontWeight.medium },
 
   // Learning
-  learningStats:     { flexDirection: 'row', gap: spacing.sm },
-  learningStat:      { flex: 1, alignItems: 'center', paddingVertical: spacing.sm },
-  learningStatVal:   { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  learningStatLabel: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 2 },
-  sectionTitle:      { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textSecondary },
-  sessionList:       { padding: 0, gap: 0, overflow: 'hidden' },
-  sessionRow:        { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
-  sessionCheck:      { width: 22, height: 22, borderRadius: radius.sm, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
-  sessionCheckDone:  { backgroundColor: colors.growth, borderColor: colors.growth },
-  checkmark:         { color: '#fff', fontSize: 13, fontWeight: fontWeight.bold },
-  sessionBody:       { flex: 1 },
-  sessionTopic:      { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.textPrimary },
-  sessionDone:       { textDecorationLine: 'line-through', color: colors.textMuted },
-  sessionMeta:       { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 1 },
-  sessionDurBadge:   { backgroundColor: colors.surface, paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
-  sessionDurText:    { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
-  divider:           { height: 1, backgroundColor: colors.border + '66', marginHorizontal: spacing.md },
+  learningStats: { flexDirection: 'row', gap: spacing.sm },
+  learningStat: { flex: 1, alignItems: 'center', paddingVertical: spacing.md },
+  learningStatVal: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  learningStatLabel: { fontSize: 10, color: colors.textMuted, marginTop: 2, textTransform: 'uppercase' },
+  sectionHeader: { marginTop: spacing.sm },
+  sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  sessionList: { padding: 0, gap: 0, overflow: 'hidden' },
+  sessionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
+  sessionCheck: { width: 22, height: 22, borderRadius: radius.sm, borderWidth: 2, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
+  sessionCheckDone: { backgroundColor: colors.growth, borderColor: colors.growth },
+  sessionBody: { flex: 1 },
+  sessionTopic: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, color: colors.textPrimary },
+  sessionDone: { textDecorationLine: 'line-through', color: colors.textMuted },
+  sessionMeta: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 1 },
+  sessionDurBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: radius.sm },
+  sessionDurText: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: spacing.md },
 
   // Error / empty
-  centered:     { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
-  loadingText:  { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary, marginTop: spacing.sm },
+  centered: { alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxl, gap: spacing.sm },
+  loadingText: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary, marginTop: spacing.sm },
   loadingSubtext: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center' },
-  emptyIcon:    { fontSize: 48 },
-  emptyText:    { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  emptyIcon: { fontSize: 48 },
+  emptyText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
   emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted, textAlign: 'center' },
-  errorCard:    { alignItems: 'center', gap: spacing.sm, padding: spacing.lg },
-  errorIcon:    { fontSize: 36 },
-  errorTitle:   { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  errorBody:    { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
+  errorCard: { alignItems: 'center', gap: spacing.sm, padding: spacing.lg },
+  errorTitle: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  errorBody: { fontSize: fontSize.sm, color: colors.textSecondary, textAlign: 'center', lineHeight: 20 },
 
   // Modal
-  modal:       { flex: 1, backgroundColor: colors.background },
-  modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border },
-  modalTitle:  { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  modalClose:  { fontSize: fontSize.lg, color: colors.textSecondary, width: 40 },
+  modal: { flex: 1, backgroundColor: colors.background },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: spacing.lg,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border
+  },
+  modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   modalScroll: { padding: spacing.lg, gap: spacing.md },
 });

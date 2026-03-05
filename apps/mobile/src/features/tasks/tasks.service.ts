@@ -1,5 +1,8 @@
 import { supabase } from '../../lib/supabase';
+import { addDays, addWeeks, addMonths, addYears } from 'date-fns';
 import type { Task, CreateTaskInput, UpdateTaskInput, TaskStatus } from '@personal-os/types';
+
+export type Frequency = 'daily' | 'weekly' | 'monthly' | 'yearly';
 
 export const tasksService = {
   getAll: async (userId: string): Promise<Task[]> => {
@@ -76,4 +79,16 @@ export const tasksService = {
       .eq('id', taskId);
     if (error) throw error;
   },
+
+  getNextDeadline: (current: string | Date, frequency: Frequency): string => {
+    const d = new Date(current);
+    switch (frequency) {
+      case 'daily': return addDays(d, 1).toISOString();
+      case 'weekly': return addWeeks(d, 1).toISOString();
+      case 'monthly': return addMonths(d, 1).toISOString();
+      case 'yearly': return addYears(d, 1).toISOString();
+      default: return d.toISOString();
+    }
+  },
 };
+

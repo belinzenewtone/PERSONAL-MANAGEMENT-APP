@@ -31,6 +31,8 @@ export interface Task {
   status: TaskStatus;
   ticket_reference: string | null;
   recurring: boolean;
+  frequency: 'daily' | 'weekly' | 'monthly' | 'yearly' | null;
+  recurring_parent_id: string | null;
   created_at: string;
 }
 

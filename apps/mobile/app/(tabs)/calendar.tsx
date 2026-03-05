@@ -12,21 +12,22 @@ import {
   eachDayOfInterval, isSameDay, isSameMonth, addMonths,
   subMonths, addWeeks, subWeeks, parseISO, isToday, addDays,
 } from 'date-fns';
+import { Ionicons } from '@expo/vector-icons';
 import { useEvents, useCreateEvent, useUpdateEvent, useDeleteEvent } from '../../src/features/calendar/calendar.hooks';
 import { useTasks } from '../../src/features/tasks/tasks.hooks';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
-import { Card } from '../../src/components/ui/Card';
+import { GlassCard } from '../../src/components/ui/GlassCard';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { CalendarEvent, EventType, Task } from '@personal-os/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EVENT_TYPE_CONFIG: Record<EventType, { color: string; label: string; icon: string }> = {
-  meeting:  { color: colors.work,     label: 'Meeting',  icon: '🤝' },
-  study:    { color: colors.growth,   label: 'Study',    icon: '📚' },
+  meeting: { color: colors.work, label: 'Meeting', icon: '🤝' },
+  study: { color: colors.growth, label: 'Study', icon: '📚' },
   personal: { color: colors.personal, label: 'Personal', icon: '🌿' },
-  bill:     { color: colors.bill,     label: 'Bill',     icon: '💳' },
+  bill: { color: colors.bill, label: 'Bill', icon: '💳' },
 };
 
 const VIEW_MODES = ['Month', 'Week', 'Day'] as const;
@@ -37,10 +38,10 @@ const DAYS_OF_WEEK = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const eventSchema = z.object({
-  title:      z.string().min(1, 'Title is required'),
-  type:       z.enum(['meeting', 'study', 'personal', 'bill']),
+  title: z.string().min(1, 'Title is required'),
+  type: z.enum(['meeting', 'study', 'personal', 'bill']),
   start_time: z.string().min(1, 'Start time is required'),
-  end_time:   z.string().min(1, 'End time is required'),
+  end_time: z.string().min(1, 'End time is required'),
 }).refine((d) => d.end_time > d.start_time, {
   message: 'End time must be after start time',
   path: ['end_time'],
@@ -62,7 +63,7 @@ function EventChip({ event, onPress }: { event: CalendarEvent; onPress: () => vo
   return (
     <TouchableOpacity
       onPress={onPress}
-      style={[styles.eventChip, { backgroundColor: cfg.color + '33', borderLeftColor: cfg.color }]}
+      style={[styles.eventChip, { backgroundColor: cfg.color + '22', borderLeftColor: cfg.color }]}
     >
       <Text style={[styles.eventChipText, { color: cfg.color }]} numberOfLines={1}>
         {event.title}
@@ -85,7 +86,7 @@ function MonthView({
 }) {
   const days = eachDayOfInterval({
     start: startOfWeek(startOfMonth(currentDate)),
-    end:   endOfWeek(endOfMonth(currentDate)),
+    end: endOfWeek(endOfMonth(currentDate)),
   });
 
   const eventsByDay = useMemo(() => {
@@ -121,11 +122,11 @@ function MonthView({
         {days.map((day) => {
           const key = format(day, 'yyyy-MM-dd');
           const dayEvents = eventsByDay[key] ?? [];
-          const dayTasks  = tasksByDay[key]  ?? [];
+          const dayTasks = tasksByDay[key] ?? [];
           const isSelected = isSameDay(day, selectedDate);
-          const todayDay   = isToday(day);
-          const inMonth    = isSameMonth(day, currentDate);
-          const totalDots  = dayEvents.length + dayTasks.length;
+          const todayDay = isToday(day);
+          const inMonth = isSameMonth(day, currentDate);
+          const totalDots = dayEvents.length + dayTasks.length;
 
           return (
             <TouchableOpacity
@@ -161,9 +162,6 @@ function MonthView({
                   />
                 ))}
               </View>
-              {totalDots > 4 && (
-                <Text style={styles.moreEvents}>+{totalDots - 4}</Text>
-              )}
             </TouchableOpacity>
           );
         })}
@@ -291,7 +289,7 @@ function EventDetailModal({ event, onClose, onEdit, onDelete }: {
       <View style={styles.modal}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.modalClose}>✕</Text>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>Event Details</Text>
           <TouchableOpacity onPress={onEdit}>
@@ -306,7 +304,7 @@ function EventDetailModal({ event, onClose, onEdit, onDelete }: {
               <Text style={[styles.eventDetailType, { color: cfg.color }]}>{cfg.label}</Text>
             </View>
           </View>
-          <Card>
+          <GlassCard>
             <View style={styles.detailRow}>
               <Text style={styles.detailLabel}>Starts</Text>
               <Text style={styles.detailValue}>
@@ -319,7 +317,7 @@ function EventDetailModal({ event, onClose, onEdit, onDelete }: {
                 {format(parseISO(event.end_time), 'EEE, MMM d · h:mm a')}
               </Text>
             </View>
-          </Card>
+          </GlassCard>
           <Button label="Delete Event" onPress={onDelete} variant="danger" fullWidth style={{ marginTop: spacing.lg }} />
         </ScrollView>
       </View>
@@ -348,10 +346,10 @@ function EventFormModal({ visible, initialDate, editEvent, onClose }: {
   const { control, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<EventFormInput>({
     resolver: zodResolver(eventSchema),
     defaultValues: {
-      title:      editEvent?.title ?? '',
-      type:       editEvent?.type  ?? 'personal',
+      title: editEvent?.title ?? '',
+      type: editEvent?.type ?? 'personal',
       start_time: editEvent ? toLocalDatetimeString(parseISO(editEvent.start_time)) : makeDefault(initialDate, 9),
-      end_time:   editEvent ? toLocalDatetimeString(parseISO(editEvent.end_time))   : makeDefault(initialDate, 10),
+      end_time: editEvent ? toLocalDatetimeString(parseISO(editEvent.end_time)) : makeDefault(initialDate, 10),
     },
   });
 
@@ -359,10 +357,10 @@ function EventFormModal({ visible, initialDate, editEvent, onClose }: {
 
   const onSubmit = async (data: EventFormInput) => {
     const payload = {
-      title:           data.title,
-      type:            data.type,
-      start_time:      new Date(data.start_time).toISOString(),
-      end_time:        new Date(data.end_time).toISOString(),
+      title: data.title,
+      type: data.type,
+      start_time: new Date(data.start_time).toISOString(),
+      end_time: new Date(data.end_time).toISOString(),
       related_task_id: null,
     };
     if (isEditing && editEvent) {
@@ -379,7 +377,7 @@ function EventFormModal({ visible, initialDate, editEvent, onClose }: {
       <View style={styles.modal}>
         <View style={styles.modalHeader}>
           <TouchableOpacity onPress={onClose}>
-            <Text style={styles.modalClose}>✕</Text>
+            <Ionicons name="close" size={24} color={colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.modalTitle}>{isEditing ? 'Edit Event' : 'New Event'}</Text>
           <View style={{ width: 40 }} />
@@ -455,9 +453,9 @@ export default function CalendarScreen() {
   const deleteEvent = useDeleteEvent();
 
   const navigate = (dir: 1 | -1) => {
-    if (viewMode === 'Month')      setCurrentDate(dir === 1 ? addMonths(currentDate, 1)  : subMonths(currentDate, 1));
-    else if (viewMode === 'Week')  setCurrentDate(dir === 1 ? addWeeks(currentDate, 1)   : subWeeks(currentDate, 1));
-    else                           setCurrentDate(addDays(currentDate, dir));
+    if (viewMode === 'Month') setCurrentDate(dir === 1 ? addMonths(currentDate, 1) : subMonths(currentDate, 1));
+    else if (viewMode === 'Week') setCurrentDate(dir === 1 ? addWeeks(currentDate, 1) : subWeeks(currentDate, 1));
+    else setCurrentDate(addDays(currentDate, dir));
   };
 
   const headerLabel = () => {
@@ -501,8 +499,9 @@ export default function CalendarScreen() {
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Calendar</Text>
-        <TouchableOpacity onPress={() => { setCurrentDate(new Date()); setSelectedDate(new Date()); }}>
-          <Text style={styles.todayBtn}>Today</Text>
+        <TouchableOpacity style={styles.headerBtn} onPress={() => { setCurrentDate(new Date()); setSelectedDate(new Date()); }}>
+          <Ionicons name="today-outline" size={16} color={colors.accentLight} />
+          <Text style={styles.headerBtnText}>Today</Text>
         </TouchableOpacity>
       </View>
 
@@ -524,16 +523,18 @@ export default function CalendarScreen() {
       {/* Navigation */}
       <View style={styles.navRow}>
         <TouchableOpacity onPress={() => navigate(-1)} style={styles.navBtn}>
-          <Text style={styles.navArrow}>‹</Text>
+          <Ionicons name="chevron-back" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
         <Text style={styles.navLabel}>{headerLabel()}</Text>
         <TouchableOpacity onPress={() => navigate(1)} style={styles.navBtn}>
-          <Text style={styles.navArrow}>›</Text>
+          <Ionicons name="chevron-forward" size={24} color={colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
       {isLoading ? (
-        <ActivityIndicator color={colors.accent} style={{ marginTop: spacing.xl }} />
+        <View style={styles.centered}>
+          <ActivityIndicator color={colors.accent} />
+        </View>
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
           {viewMode === 'Month' && (
@@ -584,7 +585,7 @@ export default function CalendarScreen() {
 
       {/* FAB */}
       <TouchableOpacity style={styles.fab} onPress={() => setShowAddModal(true)}>
-        <Text style={styles.fabIcon}>+</Text>
+        <Ionicons name="add" size={32} color="#fff" />
       </TouchableOpacity>
 
       <EventFormModal visible={showAddModal} initialDate={selectedDate} onClose={() => setShowAddModal(false)} />
@@ -619,129 +620,141 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingTop: spacing.sm,
   },
   screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  todayBtn: { fontSize: fontSize.sm, color: colors.accentLight, fontWeight: fontWeight.medium },
+  headerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(255,255,255,0.05)',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)'
+  },
+  headerBtnText: { fontSize: fontSize.xs, color: colors.accentLight, fontWeight: fontWeight.medium },
 
   modeTabs: {
-    flexDirection: 'row', marginHorizontal: spacing.md, marginTop: spacing.sm,
-    backgroundColor: colors.surface, borderRadius: radius.md, padding: 3,
+    flexDirection: 'row',
+    marginHorizontal: spacing.md,
+    marginTop: spacing.md,
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    borderRadius: radius.md,
+    padding: 3,
   },
-  modeTab: { flex: 1, paddingVertical: 6, alignItems: 'center', borderRadius: radius.sm },
+  modeTab: { flex: 1, paddingVertical: 8, alignItems: 'center', borderRadius: radius.sm },
   modeTabActive: { backgroundColor: colors.accent },
   modeTabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   modeTabTextActive: { color: '#fff' },
 
   navRow: {
     flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md, paddingVertical: spacing.md,
   },
-  navBtn: { padding: spacing.sm },
-  navArrow: { fontSize: 28, color: colors.textSecondary, lineHeight: 30 },
+  navBtn: { padding: spacing.xs },
   navLabel: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary },
 
   content: { flex: 1 },
+  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   // Month
   weekHeader: { flexDirection: 'row', paddingHorizontal: spacing.sm, marginBottom: spacing.xs },
-  weekHeaderText: { flex: 1, textAlign: 'center', fontSize: fontSize.xs, color: colors.textMuted, fontWeight: fontWeight.semibold },
+  weekHeaderText: { flex: 1, textAlign: 'center', fontSize: 10, color: colors.textMuted, fontWeight: fontWeight.bold, textTransform: 'uppercase' },
   monthGrid: { flexDirection: 'row', flexWrap: 'wrap', paddingHorizontal: spacing.sm },
-  dayCell: { width: '14.28%', minHeight: 56, alignItems: 'center', paddingVertical: 4 },
-  dayCellSelected: { backgroundColor: colors.accent + '11', borderRadius: radius.sm },
-  dayNumber: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 2 },
+  dayCell: { width: '14.28%', minHeight: 60, alignItems: 'center', paddingVertical: 4 },
+  dayCellSelected: { backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: radius.md },
+  dayNumber: { width: 28, height: 28, borderRadius: 14, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
   dayNumberToday: { backgroundColor: colors.accent },
   dayNumberSelected: { borderWidth: 1.5, borderColor: colors.accent },
   dayNumberText: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: fontWeight.medium },
-  dayNumberOutside: { color: colors.textMuted },
+  dayNumberOutside: { color: colors.textMuted, opacity: 0.3 },
   dayNumberTodayText: { color: '#fff', fontWeight: fontWeight.bold },
   dayNumberSelectedText: { color: colors.accentLight },
-  dotRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 2, justifyContent: 'center' },
-  monthEventDot: { width: 6, height: 6, borderRadius: 3 },
-  moreEvents: { fontSize: 9, color: colors.textMuted },
+  dotRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 3, justifyContent: 'center' },
+  monthEventDot: { width: 4, height: 4, borderRadius: 2 },
 
   selectedDayStrip: { margin: spacing.md, gap: spacing.xs },
   selectedDayTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary, marginBottom: spacing.xs },
 
   taskChip: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.xs,
-    paddingHorizontal: spacing.sm, paddingVertical: 4,
-    borderRadius: radius.sm,
-    backgroundColor: colors.warning + '18',
+    paddingHorizontal: spacing.sm, paddingVertical: 6,
+    borderRadius: radius.md,
+    backgroundColor: colors.warning + '12',
     borderLeftWidth: 3, borderLeftColor: colors.warning,
-    marginBottom: 2,
+    marginBottom: 4,
   },
-  taskChipDone: { opacity: 0.5 },
+  taskChipDone: { opacity: 0.4 },
   taskChipDot: { width: 6, height: 6, borderRadius: 3 },
   taskChipText: { flex: 1, fontSize: 11, fontWeight: fontWeight.medium, color: colors.textPrimary },
   taskChipTextDone: { textDecorationLine: 'line-through', color: colors.textMuted },
-  taskChipBadge: { fontSize: 10, color: colors.textMuted, textTransform: 'capitalize' },
+  taskChipBadge: { fontSize: 9, color: colors.textMuted, textTransform: 'uppercase', fontWeight: fontWeight.bold },
 
   // Event chip
-  eventChip: { paddingHorizontal: spacing.sm, paddingVertical: 3, borderRadius: radius.sm, borderLeftWidth: 3, marginBottom: 2 },
+  eventChip: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.md, borderLeftWidth: 3, marginBottom: 4 },
   eventChipText: { fontSize: 11, fontWeight: fontWeight.medium },
 
   // Week
-  weekView: { flexDirection: 'row', paddingHorizontal: spacing.sm },
-  weekDayCol: { width: 120, marginRight: spacing.xs },
-  weekDayHeader: { alignItems: 'center', paddingVertical: spacing.xs, marginBottom: spacing.xs, borderRadius: radius.sm },
+  weekView: { flexDirection: 'row', paddingHorizontal: spacing.sm, paddingBottom: 20 },
+  weekDayCol: { width: 140, marginRight: spacing.sm },
+  weekDayHeader: { alignItems: 'center', paddingVertical: spacing.sm, marginBottom: spacing.sm, borderRadius: radius.md, backgroundColor: 'rgba(255,255,255,0.03)' },
   weekDayHeaderToday: { backgroundColor: colors.accent + '22' },
-  weekDayName: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  weekDayName: { fontSize: 10, color: colors.textMuted, fontWeight: fontWeight.bold, textTransform: 'uppercase', marginBottom: 2 },
   weekDayNameToday: { color: colors.accentLight },
-  weekDayNum: { fontSize: fontSize.lg, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  weekDayNum: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   weekDayNumToday: { color: colors.accent },
-  weekDayEvents: { gap: 3 },
+  weekDayEvents: { gap: 4 },
 
   // Day
   dayView: { paddingHorizontal: spacing.md, paddingBottom: 100 },
-  dayHourRow: { flexDirection: 'row', minHeight: 52, borderTopWidth: 1, borderTopColor: colors.border + '55' },
-  dayHourLabel: { width: 44, paddingTop: spacing.xs, fontSize: fontSize.xs, color: colors.textMuted },
-  dayHourLabelPast: { color: colors.border },
-  dayHourLine: { width: 1, backgroundColor: colors.border + '55', marginTop: spacing.xs, marginRight: spacing.sm },
-  dayHourEvents: { flex: 1, gap: 3, paddingTop: 4, paddingBottom: 4 },
-  dayEventBlock: { borderRadius: radius.sm, borderLeftWidth: 3, paddingHorizontal: spacing.sm, paddingVertical: spacing.xs },
+  dayHourRow: { flexDirection: 'row', minHeight: 64, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
+  dayHourLabel: { width: 48, paddingTop: spacing.xs, fontSize: 10, color: colors.textMuted, fontWeight: fontWeight.semibold },
+  dayHourLabelPast: { opacity: 0.3 },
+  dayHourLine: { width: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginTop: spacing.xs, marginRight: spacing.sm },
+  dayHourEvents: { flex: 1, gap: 4, paddingTop: 4, paddingBottom: 4 },
+  dayEventBlock: { borderRadius: radius.md, borderLeftWidth: 3, paddingHorizontal: spacing.sm, paddingVertical: 6 },
   dayEventTitle: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
-  dayEventTime: { fontSize: fontSize.xs, marginTop: 1 },
+  dayEventTime: { fontSize: 10, marginTop: 1, opacity: 0.8 },
 
   // FAB
   fab: {
     position: 'absolute', right: spacing.lg, bottom: spacing.lg,
-    width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent,
+    width: 60, height: 60, borderRadius: 30, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
-    shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
+    shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.4, shadowRadius: 10, elevation: 8,
   },
-  fabIcon: { fontSize: 28, color: '#fff', lineHeight: 32 },
 
   // Modal
   modal: { flex: 1, backgroundColor: colors.background },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border,
+    padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  modalClose: { fontSize: fontSize.lg, color: colors.textSecondary, width: 40 },
-  editBtn: { fontSize: fontSize.md, color: colors.accentLight, fontWeight: fontWeight.semibold, width: 40, textAlign: 'right' },
+  editBtn: { fontSize: fontSize.md, color: colors.accentLight, fontWeight: fontWeight.semibold },
   modalScroll: { padding: spacing.lg, gap: spacing.md },
 
   // Event detail
   eventTypeHeader: {
     flexDirection: 'row', alignItems: 'center', gap: spacing.md,
-    padding: spacing.md, borderRadius: radius.lg, marginBottom: spacing.sm,
+    padding: spacing.md, borderRadius: radius.lg, marginBottom: spacing.md,
   },
-  eventTypeIcon: { fontSize: 40 },
+  eventTypeIcon: { fontSize: 32 },
   eventDetailTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  eventDetailType: { fontSize: fontSize.sm, fontWeight: fontWeight.medium, textTransform: 'capitalize' },
+  eventDetailType: { fontSize: fontSize.xs, fontWeight: fontWeight.bold, textTransform: 'uppercase', letterSpacing: 0.5 },
   detailRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  detailRowBorder: { borderTopWidth: 1, borderTopColor: colors.border, marginTop: spacing.sm, paddingTop: spacing.sm },
-  detailLabel: { fontSize: fontSize.sm, color: colors.textSecondary },
+  detailRowBorder: { borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)', marginTop: spacing.md, paddingTop: spacing.md },
+  detailLabel: { fontSize: fontSize.xs, color: colors.textSecondary, textTransform: 'uppercase', fontWeight: fontWeight.bold },
   detailValue: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: fontWeight.medium },
 
   // Form
-  fieldLabel: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  fieldLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.bold, textTransform: 'uppercase', marginBottom: -4 },
   chipRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+    flexDirection: 'row', alignItems: 'center', gap: 6,
     paddingVertical: spacing.xs, paddingHorizontal: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+    borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)',
   },
   chipIcon: { fontSize: 14 },
-  chipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  chipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.bold },
 });

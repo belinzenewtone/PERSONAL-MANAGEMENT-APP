@@ -37,12 +37,18 @@
       "bundler": "metro"
     },
     "scheme": "personal-os",
+    "updates": {
+      "url": "https://u.expo.dev/9070ffa3-e19f-40d7-8d29-4afde54a6bec"
+    },
     "plugins": [
-      ["expo-build-properties", {
-        "android": {
-          "gradleVersion": "8.13"
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "gradleVersion": "8.13"
+          }
         }
-      }],
+      ],
       "expo-router",
       "expo-secure-store",
       "expo-background-fetch",
@@ -54,7 +60,8 @@
           "color": "#1877F2",
           "sounds": []
         }
-      ]
+      ],
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true

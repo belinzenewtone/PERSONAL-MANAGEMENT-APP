@@ -3,23 +3,28 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   Modal, Dimensions,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format, parseISO, isSameDay, subDays } from 'date-fns';
 import { LineChart } from 'react-native-chart-kit';
+import * as Sharing from 'expo-sharing';
+import * as FileSystem from 'expo-file-system';
 import {
   useTransactions, useCreateTransaction,
   useUpdateTransaction, useDeleteTransaction,
 } from '../../src/features/finance/finance.hooks';
+import { useBudgets, useUpsertBudget } from '../../src/features/finance/budget.hooks';
+import { Budget } from '../../src/features/finance/budget.service';
 import { financeService, FilterPeriod } from '../../src/features/finance/finance.service';
 import {
   EXPENSE_CATEGORIES, INCOME_CATEGORIES, CATEGORY_COLORS,
 } from '../../src/features/finance/finance.constants';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
-import { Card } from '../../src/components/ui/Card';
+import { GlassCard } from '../../src/components/ui/GlassCard';
 import { SmsImportModal } from '../../src/components/finance/SmsImportModal';
 import { FinanceSkeletonList } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/components/ui/Toast';
@@ -32,27 +37,27 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const FILTERS: { value: FilterPeriod; label: string }[] = [
   { value: 'today', label: 'Today' },
-  { value: 'week',  label: 'Week' },
+  { value: 'week', label: 'Week' },
   { value: 'month', label: 'Month' },
-  { value: 'year',  label: 'Year' },
-  { value: 'all',   label: 'All' },
+  { value: 'year', label: 'Year' },
+  { value: 'all', label: 'All' },
 ];
 
 const SOURCES: { value: TransactionSource; label: string; icon: string }[] = [
   { value: 'mpesa', label: 'M-Pesa', icon: '📱' },
-  { value: 'bank',  label: 'Bank',   icon: '🏦' },
-  { value: 'cash',  label: 'Cash',   icon: '💵' },
+  { value: 'bank', label: 'Bank', icon: '🏦' },
+  { value: 'cash', label: 'Cash', icon: '💵' },
 ];
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
 const txSchema = z.object({
-  type:             z.enum(['income', 'expense']),
-  amount:           z.string().min(1).refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter a valid amount'),
-  category:         z.string().min(1, 'Select a category'),
-  description:      z.string().optional(),
-  source:           z.enum(['mpesa', 'bank', 'cash']),
-  mpesa_code:       z.string().optional(),
+  type: z.enum(['income', 'expense']),
+  amount: z.string().min(1).refine((v) => !isNaN(Number(v)) && Number(v) > 0, 'Enter a valid amount'),
+  category: z.string().min(1, 'Select a category'),
+  description: z.string().optional(),
+  source: z.enum(['mpesa', 'bank', 'cash']),
+  mpesa_code: z.string().optional(),
   transaction_date: z.string().min(1),
 });
 
@@ -87,30 +92,30 @@ function SummaryCards({ income, expense, balance, savingsRate }: {
 }) {
   return (
     <View style={styles.summaryGrid}>
-      <Card style={[styles.summaryCard, styles.summaryCardIncome]}>
+      <GlassCard style={[styles.summaryCard, styles.summaryCardIncome]}>
         <Text style={styles.summaryIcon}>📈</Text>
         <Text style={styles.summaryLabel}>Income</Text>
         <Text style={[styles.summaryAmount, { color: colors.success }]}>{fmt(income)}</Text>
-      </Card>
-      <Card style={[styles.summaryCard, styles.summaryCardExpense]}>
+      </GlassCard>
+      <GlassCard style={[styles.summaryCard, styles.summaryCardExpense]}>
         <Text style={styles.summaryIcon}>📉</Text>
         <Text style={styles.summaryLabel}>Expenses</Text>
         <Text style={[styles.summaryAmount, { color: colors.danger }]}>{fmt(expense)}</Text>
-      </Card>
-      <Card style={[styles.summaryCard, styles.summaryCardBalance]}>
+      </GlassCard>
+      <GlassCard style={[styles.summaryCard, styles.summaryCardBalance]}>
         <Text style={styles.summaryIcon}>💼</Text>
         <Text style={styles.summaryLabel}>Balance</Text>
         <Text style={[styles.summaryAmount, { color: balance >= 0 ? colors.success : colors.danger }]}>
           {fmt(balance)}
         </Text>
-      </Card>
-      <Card style={[styles.summaryCard, styles.summaryCardSavings]}>
+      </GlassCard>
+      <GlassCard style={[styles.summaryCard, styles.summaryCardSavings]}>
         <Text style={styles.summaryIcon}>🎯</Text>
         <Text style={styles.summaryLabel}>Savings</Text>
         <Text style={[styles.summaryAmount, { color: savingsRate >= 20 ? colors.success : colors.warning }]}>
           {savingsRate}%
         </Text>
-      </Card>
+      </GlassCard>
     </View>
   );
 }
@@ -132,17 +137,17 @@ function SpendingTrendChart({ transactions }: { transactions: Transaction[] }) {
 
   if (!hasData) {
     return (
-      <Card style={styles.chartCard}>
+      <GlassCard style={styles.chartCard}>
         <Text style={styles.chartTitle}>Spending Trend (7 days)</Text>
         <View style={styles.chartEmpty}>
           <Text style={styles.chartEmptyText}>No spending data yet</Text>
         </View>
-      </Card>
+      </GlassCard>
     );
   }
 
   return (
-    <Card style={styles.chartCard}>
+    <GlassCard style={styles.chartCard}>
       <Text style={styles.chartTitle}>Spending Trend (7 days)</Text>
       <LineChart
         data={{
@@ -159,46 +164,100 @@ function SpendingTrendChart({ transactions }: { transactions: Transaction[] }) {
           color: (opacity = 1) => `rgba(99, 102, 241, ${opacity})`,
           labelColor: () => colors.textMuted,
           propsForDots: { r: '4', strokeWidth: '2', stroke: colors.accent },
-          propsForBackgroundLines: { stroke: colors.border + '55' },
+          propsForBackgroundLines: { stroke: 'rgba(255,255,255,0.05)' },
         }}
         bezier
         withInnerLines={false}
         style={{ borderRadius: radius.md, marginLeft: -spacing.sm }}
       />
-    </Card>
+    </GlassCard>
   );
 }
 
 // ─── Category Breakdown ───────────────────────────────────────────────────────
 
-function CategoryBreakdown({ transactions }: { transactions: Transaction[] }) {
+function CategoryBreakdown({ transactions, budgets, onCategoryPress }: {
+  transactions: Transaction[];
+  budgets: Budget[];
+  onCategoryPress: (category: string) => void;
+}) {
   const breakdown = useMemo(
     () => financeService.getCategoryBreakdown(transactions),
     [transactions]
   );
 
-  const total = breakdown.reduce((s, c) => s + c.total, 0);
-
-  if (breakdown.length === 0) return null;
-
   return (
-    <Card style={styles.breakdownCard}>
-      <Text style={styles.chartTitle}>Expenses by Category</Text>
-      {breakdown.slice(0, 6).map(({ category, total: catTotal }) => {
-        const pct = total > 0 ? (catTotal / total) * 100 : 0;
+    <GlassCard style={styles.breakdownCard}>
+      <Text style={styles.chartTitle}>Expenses vs Budgets</Text>
+      {breakdown.length === 0 && (
+        <Text style={styles.chartEmptyText}>No expenses this period</Text>
+      )}
+      {breakdown.slice(0, 8).map(({ category, total: catTotal }) => {
+        const budget = budgets.find(b => b.category === category);
+        const budgetAmount = budget?.amount || 0;
+        const pct = budgetAmount > 0 ? (catTotal / budgetAmount) * 100 : 0;
         const color = CATEGORY_COLORS[category] ?? colors.textMuted;
+
         return (
-          <View key={category} style={styles.breakdownRow}>
-            <View style={[styles.breakdownDot, { backgroundColor: color }]} />
-            <Text style={styles.breakdownLabel} numberOfLines={1}>{category}</Text>
-            <View style={styles.breakdownBarContainer}>
-              <View style={[styles.breakdownBar, { width: `${pct}%` as any, backgroundColor: color + 'aa' }]} />
+          <TouchableOpacity
+            key={category}
+            onPress={() => onCategoryPress(category)}
+            style={styles.breakdownRowOuter}
+          >
+            <View style={styles.breakdownRow}>
+              <View style={[styles.breakdownDot, { backgroundColor: color }]} />
+              <Text style={styles.breakdownLabel} numberOfLines={1}>{category}</Text>
+              <Text style={styles.breakdownAmount}>
+                {fmt(catTotal)} {budgetAmount > 0 && <Text style={styles.budgetAmount}>/ {fmt(budgetAmount)}</Text>}
+              </Text>
             </View>
-            <Text style={styles.breakdownAmount}>{fmt(catTotal)}</Text>
-          </View>
+            <View style={styles.breakdownBarContainer}>
+              <View style={[
+                styles.breakdownBar,
+                {
+                  width: `${Math.min(pct || 0, 100)}%` as any,
+                  backgroundColor: pct > 100 ? colors.danger : (color + 'aa')
+                }
+              ]} />
+            </View>
+          </TouchableOpacity>
         );
       })}
-    </Card>
+    </GlassCard>
+  );
+}
+
+// ─── Budget Modal ─────────────────────────────────────────────────────────────
+
+function BudgetModal({ visible, category, currentAmount, onClose, onSave }: {
+  visible: boolean;
+  category: string;
+  currentAmount?: number;
+  onClose: () => void;
+  onSave: (amount: number) => void;
+}) {
+  const [amount, setAmount] = useState(currentAmount ? String(currentAmount) : '');
+
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+      <TouchableOpacity activeOpacity={1} style={styles.modalOverlay} onPress={onClose}>
+        <GlassCard style={styles.budgetModalContent}>
+          <Text style={styles.modalTitle}>Set Budget: {category}</Text>
+          <TextInput
+            label="Monthly Limit (KES)"
+            placeholder="0.00"
+            keyboardType="decimal-pad"
+            value={amount}
+            onChangeText={setAmount}
+            autoFocus
+          />
+          <View style={styles.modalActions}>
+            <Button label="Cancel" variant="outline" onPress={onClose} style={{ flex: 1 }} />
+            <Button label="Save" onPress={() => onSave(Number(amount))} style={{ flex: 1 }} />
+          </View>
+        </GlassCard>
+      </TouchableOpacity>
+    </Modal>
   );
 }
 
@@ -240,39 +299,39 @@ function TransactionFormModal({ visible, editTx, onClose }: {
   editTx?: Transaction | null;
   onClose: () => void;
 }) {
-  const createTx  = useCreateTransaction();
-  const updateTx  = useUpdateTransaction();
+  const createTx = useCreateTransaction();
+  const updateTx = useUpdateTransaction();
   const isEditing = !!editTx;
 
   const { control, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<TxFormInput>({
     resolver: zodResolver(txSchema),
     defaultValues: {
-      type:             editTx?.type             ?? 'expense',
-      amount:           editTx ? String(editTx.amount) : '',
-      category:         editTx?.category         ?? '',
-      description:      editTx?.description      ?? '',
-      source:           editTx?.source           ?? 'mpesa',
-      mpesa_code:       editTx?.mpesa_code       ?? '',
+      type: editTx?.type ?? 'expense',
+      amount: editTx ? String(editTx.amount) : '',
+      category: editTx?.category ?? '',
+      description: editTx?.description ?? '',
+      source: editTx?.source ?? 'mpesa',
+      mpesa_code: editTx?.mpesa_code ?? '',
       transaction_date: editTx
         ? toLocalDateString()
         : toLocalDateString(),
     },
   });
 
-  const txType   = watch('type');
-  const source   = watch('source');
+  const txType = watch('type');
+  const source = watch('source');
   const category = watch('category');
   const categories = txType === 'income' ? INCOME_CATEGORIES : EXPENSE_CATEGORIES;
 
   const onSubmit = async (data: TxFormInput) => {
     const payload = {
-      type:             data.type,
-      amount:           Number(data.amount),
-      category:         data.category,
-      description:      data.description || null,
-      source:           data.source,
-      mpesa_code:       data.mpesa_code || null,
-      auto_imported:    false,
+      type: data.type,
+      amount: Number(data.amount),
+      category: data.category,
+      description: data.description || null,
+      source: data.source,
+      mpesa_code: data.mpesa_code || null,
+      auto_imported: false,
       transaction_date: new Date(data.transaction_date).toISOString(),
     };
     if (isEditing && editTx) {
@@ -296,8 +355,6 @@ function TransactionFormModal({ visible, editTx, onClose }: {
         </View>
 
         <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.modalScroll}>
-
-          {/* Income / Expense toggle */}
           <View style={styles.typeToggle}>
             {(['expense', 'income'] as TransactionType[]).map((t) => (
               <TouchableOpacity
@@ -315,7 +372,6 @@ function TransactionFormModal({ visible, editTx, onClose }: {
             ))}
           </View>
 
-          {/* Amount */}
           <Controller
             control={control}
             name="amount"
@@ -332,7 +388,6 @@ function TransactionFormModal({ visible, editTx, onClose }: {
             )}
           />
 
-          {/* Category */}
           <Text style={styles.fieldLabel}>Category *</Text>
           <View style={styles.chipGrid}>
             {categories.map((cat) => {
@@ -351,7 +406,6 @@ function TransactionFormModal({ visible, editTx, onClose }: {
           </View>
           {errors.category && <Text style={styles.errorText}>{errors.category.message}</Text>}
 
-          {/* Source */}
           <Text style={styles.fieldLabel}>Source</Text>
           <View style={styles.chipRow}>
             {SOURCES.map((s) => (
@@ -366,7 +420,6 @@ function TransactionFormModal({ visible, editTx, onClose }: {
             ))}
           </View>
 
-          {/* M-Pesa code (optional) */}
           {source === 'mpesa' && (
             <Controller
               control={control}
@@ -384,7 +437,6 @@ function TransactionFormModal({ visible, editTx, onClose }: {
             />
           )}
 
-          {/* Description */}
           <Controller
             control={control}
             name="description"
@@ -418,16 +470,56 @@ function TransactionFormModal({ visible, editTx, onClose }: {
 
 export default function FinanceScreen() {
   const [period, setPeriod] = useState<FilterPeriod>('month');
-  const [showModal, setShowModal]   = useState(false);
-  const [editTx, setEditTx]         = useState<Transaction | null>(null);
-  const [showEdit, setShowEdit]     = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [editTx, setEditTx] = useState<Transaction | null>(null);
+  const [showEdit, setShowEdit] = useState(false);
   const [showSmsImport, setShowSmsImport] = useState(false);
+  const [selectedBudgetCategory, setSelectedBudgetCategory] = useState<string | null>(null);
 
   const { data: transactions = [], isLoading } = useTransactions(period);
+  const { data: budgets = [] } = useBudgets();
   const deleteTx = useDeleteTransaction();
+  const upsertBudget = useUpsertBudget();
 
-  const summary   = useMemo(() => financeService.getMonthlySummary(transactions), [transactions]);
-  const grouped   = useMemo(() => groupByDate(transactions), [transactions]);
+  const filteredTransactions = useMemo(() => {
+    if (!searchQuery) return transactions;
+    return transactions.filter(t =>
+      t.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false) ||
+      (t.mpesa_code?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
+    );
+  }, [transactions, searchQuery]);
+
+  const summary = useMemo(() => financeService.getMonthlySummary(transactions), [transactions]);
+  const grouped = useMemo(() => groupByDate(filteredTransactions), [filteredTransactions]);
+
+  const handleExport = async () => {
+    try {
+      if (transactions.length === 0) {
+        toast.error('No transactions to export');
+        return;
+      }
+      const header = 'Date,Type,Category,Amount,Description,Source,MPesa Code\n';
+      const rows = transactions.map(t =>
+        `${t.transaction_date.slice(0, 10)},${t.type},${t.category},${t.amount},"${t.description || ''}",${t.source},${t.mpesa_code || ''}`
+      ).join('\n');
+
+      // Use dynamic access to avoid lint issues with library types
+      const fs = FileSystem as any;
+      const fileUri = fs.cacheDirectory + `finance_export_${format(new Date(), 'yyyy_MM')}.csv`;
+      await fs.writeAsStringAsync(fileUri, header + rows, { encoding: fs.EncodingType.UTF8 });
+
+      if (await Sharing.isAvailableAsync()) {
+        await Sharing.shareAsync(fileUri);
+      } else {
+        toast.error('Sharing not available');
+      }
+    } catch (err) {
+      toast.error('Export failed');
+      console.error(err);
+    }
+  };
 
   const handleLongPress = (tx: Transaction) => {
     deleteTx.mutate(tx.id, {
@@ -437,15 +529,34 @@ export default function FinanceScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Finance</Text>
-        <TouchableOpacity onPress={() => setShowSmsImport(true)} style={styles.smsImportBtn}>
-          <Text style={styles.smsImportText}>📱 Import SMS</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity onPress={handleExport} style={styles.headerIconBtn}>
+            <Ionicons name="share-outline" size={20} color={colors.accentLight} />
+          </TouchableOpacity>
+          <TouchableOpacity onPress={() => setShowSmsImport(true)} style={styles.smsImportBtn}>
+            <Text style={styles.smsImportText}>📱 Import</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Period filter */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
+        <TextInput
+          placeholder="Search transactions..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          containerStyle={styles.searchField}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <ScrollView horizontal showsHorizontalScrollIndicator={false}
         style={styles.filtersScroll} contentContainerStyle={styles.filtersContainer}>
         {FILTERS.map((f) => (
@@ -465,17 +576,14 @@ export default function FinanceScreen() {
         <FinanceSkeletonList />
       ) : (
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scroll}>
-
-          {/* Summary Cards */}
           <SummaryCards {...summary} />
-
-          {/* Spending Trend */}
           <SpendingTrendChart transactions={transactions} />
+          <CategoryBreakdown
+            transactions={transactions}
+            budgets={budgets}
+            onCategoryPress={(cat) => setSelectedBudgetCategory(cat)}
+          />
 
-          {/* Category Breakdown */}
-          <CategoryBreakdown transactions={transactions} />
-
-          {/* Transactions */}
           <Text style={styles.sectionTitle}>Transactions</Text>
           {grouped.length === 0 ? (
             <View style={styles.empty}>
@@ -496,7 +604,7 @@ export default function FinanceScreen() {
                     {fmt(items.filter((t) => t.type === 'expense').reduce((s, t) => s + Number(t.amount), 0))}
                   </Text>
                 </View>
-                <Card style={styles.txCard}>
+                <GlassCard style={styles.txCard}>
                   {items.map((tx, i) => (
                     <View key={tx.id}>
                       <TransactionItem
@@ -507,14 +615,13 @@ export default function FinanceScreen() {
                       {i < items.length - 1 && <View style={styles.divider} />}
                     </View>
                   ))}
-                </Card>
+                </GlassCard>
               </View>
             ))
           )}
         </ScrollView>
       )}
 
-      {/* FAB */}
       <TouchableOpacity style={styles.fab} onPress={() => setShowModal(true)}>
         <Text style={styles.fabIcon}>+</Text>
       </TouchableOpacity>
@@ -530,6 +637,20 @@ export default function FinanceScreen() {
       )}
 
       <SmsImportModal visible={showSmsImport} onClose={() => setShowSmsImport(false)} />
+
+      {selectedBudgetCategory && (
+        <BudgetModal
+          visible={!!selectedBudgetCategory}
+          category={selectedBudgetCategory}
+          currentAmount={budgets.find(b => b.category === selectedBudgetCategory)?.amount}
+          onClose={() => setSelectedBudgetCategory(null)}
+          onSave={async (amount) => {
+            await upsertBudget.mutateAsync({ category: selectedBudgetCategory, amount });
+            setSelectedBudgetCategory(null);
+            toast.success(`Budget for ${selectedBudgetCategory} updated`);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 }
@@ -538,80 +659,89 @@ export default function FinanceScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-
   header: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: spacing.md, paddingTop: spacing.sm,
   },
-  screenTitle:  { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  periodLabel:  { fontSize: fontSize.sm, color: colors.textSecondary },
+  screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  headerActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  headerIconBtn: {
+    padding: spacing.xs + 2,
+    backgroundColor: 'rgba(30, 30, 35, 0.6)',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.1)',
+  },
   smsImportBtn: {
     flexDirection: 'row', alignItems: 'center',
     paddingVertical: spacing.xs, paddingHorizontal: spacing.sm,
-    backgroundColor: colors.surface, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border,
+    backgroundColor: 'rgba(30, 30, 35, 0.6)', borderRadius: radius.md,
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)',
   },
-  smsImportText: { fontSize: fontSize.xs, color: colors.accentLight, fontWeight: fontWeight.medium },
+  smsImportText: { fontSize: fontSize.xs, color: colors.textPrimary, fontWeight: fontWeight.medium },
 
-  filtersScroll:     { maxHeight: 44, marginTop: spacing.sm },
-  filtersContainer:  { paddingHorizontal: spacing.md, gap: spacing.sm },
-  filterChip:        { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: colors.border },
-  filterChipActive:  { backgroundColor: colors.accent, borderColor: colors.accent },
-  filterChipText:    { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  filtersScroll: { maxHeight: 44, marginTop: spacing.sm },
+  filtersContainer: { paddingHorizontal: spacing.md, gap: spacing.sm },
+  filterChip: { paddingVertical: spacing.xs, paddingHorizontal: spacing.md, borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  filterChipActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  filterChipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   filterChipTextActive: { color: '#fff' },
 
   scroll: { padding: spacing.md, paddingBottom: 100 },
 
-  // Summary grid
-  summaryGrid:    { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
-  summaryCard:    { width: '47.5%', alignItems: 'flex-start', gap: 4 },
-  summaryCardIncome:  {},
-  summaryCardExpense: {},
-  summaryCardBalance: {},
-  summaryCardSavings: {},
-  summaryIcon:   { fontSize: 22 },
-  summaryLabel:  { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
+  summaryCard: { width: '47.5%', alignItems: 'flex-start', gap: 4 },
+  summaryIcon: { fontSize: 22 },
+  summaryLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
   summaryAmount: { fontSize: fontSize.md, fontWeight: fontWeight.bold, color: colors.textPrimary },
 
-  // Chart
-  chartCard:      { marginBottom: spacing.md },
-  chartTitle:     { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary, marginBottom: spacing.sm },
-  chartEmpty:     { height: 80, alignItems: 'center', justifyContent: 'center' },
+  chartCard: { marginBottom: spacing.md },
+  chartTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textPrimary, marginBottom: spacing.sm },
+  chartEmpty: { height: 80, alignItems: 'center', justifyContent: 'center' },
   chartEmptyText: { color: colors.textMuted, fontSize: fontSize.sm },
 
-  // Breakdown
-  breakdownCard:         { marginBottom: spacing.md, gap: spacing.sm },
-  breakdownRow:          { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  breakdownDot:          { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
-  breakdownLabel:        { fontSize: fontSize.xs, color: colors.textSecondary, width: 90, flexShrink: 0 },
-  breakdownBarContainer: { flex: 1, height: 6, backgroundColor: colors.border, borderRadius: radius.full, overflow: 'hidden' },
-  breakdownBar:          { height: '100%', borderRadius: radius.full },
-  breakdownAmount:       { fontSize: fontSize.xs, color: colors.textPrimary, fontWeight: fontWeight.medium, width: 70, textAlign: 'right', flexShrink: 0 },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginTop: spacing.xs,
+    marginBottom: spacing.xs,
+  },
+  searchField: { flex: 1, height: 40, marginBottom: 0 },
+  searchInput: { height: 40, paddingLeft: 36, paddingRight: 36 },
+  searchIcon: { position: 'absolute', left: 24, zIndex: 1 },
+  clearBtn: { position: 'absolute', right: 24, zIndex: 1 },
+
+  breakdownCard: { marginBottom: spacing.md, gap: spacing.sm },
+  breakdownRowOuter: { marginBottom: spacing.sm },
+  breakdownRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginBottom: 4 },
+  breakdownDot: { width: 8, height: 8, borderRadius: 4 },
+  breakdownLabel: { fontSize: fontSize.xs, color: colors.textSecondary, flex: 1 },
+  breakdownBarContainer: { height: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: radius.full, overflow: 'hidden' },
+  breakdownBar: { height: '100%', borderRadius: radius.full },
+  breakdownAmount: { fontSize: fontSize.xs, color: colors.textPrimary, fontWeight: fontWeight.medium },
+  budgetAmount: { color: colors.textMuted, fontSize: 10 },
 
   sectionTitle: { fontSize: fontSize.md, fontWeight: fontWeight.semibold, color: colors.textSecondary, marginBottom: spacing.sm },
-
-  // Date group
-  dateHeader:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, marginTop: spacing.sm },
-  dateHeaderText:  { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  dateHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4, marginTop: spacing.sm },
+  dateHeaderText: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textSecondary },
   dateHeaderTotal: { fontSize: fontSize.xs, color: colors.danger },
 
-  // Transaction item
   txCard: { padding: 0, gap: 0, overflow: 'hidden', marginBottom: spacing.sm },
   txItem: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, padding: spacing.md },
   txIconWrap: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
-  txIcon:     { fontSize: 18 },
-  txBody:     { flex: 1 },
+  txIcon: { fontSize: 18 },
+  txBody: { flex: 1 },
   txCategory: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold, color: colors.textPrimary },
-  txDesc:     { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 1 },
-  txAmount:   { fontSize: fontSize.md, fontWeight: fontWeight.bold },
-  divider:    { height: 1, backgroundColor: colors.border + '66', marginHorizontal: spacing.md },
+  txDesc: { fontSize: fontSize.xs, color: colors.textMuted, marginTop: 1 },
+  txAmount: { fontSize: fontSize.md, fontWeight: fontWeight.bold },
+  divider: { height: 1, backgroundColor: 'rgba(255,255,255,0.05)', marginHorizontal: spacing.md },
 
-  empty:        { alignItems: 'center', paddingVertical: spacing.xxl },
-  emptyIcon:    { fontSize: 48, marginBottom: spacing.sm },
-  emptyText:    { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  empty: { alignItems: 'center', paddingVertical: spacing.xxl },
+  emptyIcon: { fontSize: 48, marginBottom: spacing.sm },
+  emptyText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
   emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
 
-  // FAB
   fab: {
     position: 'absolute', right: spacing.lg, bottom: spacing.lg,
     width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent,
@@ -621,40 +751,47 @@ const styles = StyleSheet.create({
   },
   fabIcon: { fontSize: 28, color: '#fff', lineHeight: 32 },
 
-  // Modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.lg,
+  },
+  budgetModalContent: { width: '100%', padding: spacing.lg, gap: spacing.md },
+  modalActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+
   modal: { flex: 1, backgroundColor: colors.background },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
-    padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: colors.border,
+    padding: spacing.lg, borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.05)',
   },
   modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   modalClose: { fontSize: fontSize.lg, color: colors.textSecondary, width: 40 },
   modalScroll: { padding: spacing.lg, gap: spacing.md },
 
-  // Type toggle
   typeToggle: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xs },
   typeBtn: {
     flex: 1, paddingVertical: spacing.sm, borderRadius: radius.md,
-    borderWidth: 1, borderColor: colors.border, alignItems: 'center',
+    borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', alignItems: 'center',
   },
-  typeBtnExpenseActive: { backgroundColor: colors.danger + '22', borderColor: colors.danger },
-  typeBtnIncomeActive:  { backgroundColor: colors.success + '22', borderColor: colors.success },
-  typeBtnText:       { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  typeBtnExpenseActive: { backgroundColor: 'rgba(239, 68, 68, 0.2)', borderColor: colors.danger },
+  typeBtnIncomeActive: { backgroundColor: 'rgba(34, 197, 94, 0.2)', borderColor: colors.success },
+  typeBtnText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   typeBtnTextActive: { color: colors.textPrimary, fontWeight: fontWeight.semibold },
 
-  // Category chips
   fieldLabel: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
-  chipGrid:   { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
   catChip: {
     paddingVertical: 6, paddingHorizontal: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+    borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)',
   },
   catChipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
-  chipRow:  { flexDirection: 'row', gap: spacing.sm },
+  chipRow: { flexDirection: 'row', gap: spacing.sm },
   chip: {
     flexDirection: 'row', alignItems: 'center', gap: 4,
     paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
-    borderRadius: radius.full, borderWidth: 1, borderColor: colors.border, backgroundColor: colors.surface,
+    borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)',
   },
   chipIcon: { fontSize: 14 },
   chipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },

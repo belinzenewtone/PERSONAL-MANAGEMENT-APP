@@ -6,6 +6,7 @@ import {
   StyleSheet,
   TextInputProps,
   TouchableOpacity,
+  ViewStyle,
 } from 'react-native';
 import { colors, radius, spacing, fontSize } from '../../lib/theme';
 
@@ -14,14 +15,15 @@ interface InputProps extends TextInputProps {
   error?: string;
   rightIcon?: React.ReactNode;
   onRightIconPress?: () => void;
+  containerStyle?: ViewStyle;
 }
 
 export const TextInput = forwardRef<RNTextInput, InputProps>(
-  ({ label, error, rightIcon, onRightIconPress, style, ...props }, ref) => {
+  ({ label, error, rightIcon, onRightIconPress, style, containerStyle, ...props }, ref) => {
     const [focused, setFocused] = useState(false);
 
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, containerStyle]}>
         {label && <Text style={styles.label}>{label}</Text>}
         <View
           style={[
@@ -64,10 +66,10 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.surface,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
+    backgroundColor: 'rgba(30, 30, 35, 0.7)',
+    borderRadius: 24,
+    borderWidth: 1.2,
+    borderColor: 'rgba(255, 255, 255, 0.12)',
     paddingHorizontal: spacing.md,
   },
   focused: {

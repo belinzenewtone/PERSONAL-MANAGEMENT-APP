@@ -1,9 +1,9 @@
 export const colors = {
   // Base
-  background: '#0f172a',
-  surface: '#1e293b',
-  surfaceElevated: '#253347',
-  border: '#334155',
+  background: '#0a0a0c', // Deep near-black for better glass contrast
+  surface: 'rgba(25, 25, 30, 0.7)', // Translucent surface by default
+  surfaceElevated: 'rgba(35, 35, 45, 0.8)',
+  border: 'rgba(255, 255, 255, 0.1)',
 
   // Text
   textPrimary: '#f8fafc',

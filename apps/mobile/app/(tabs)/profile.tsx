@@ -10,7 +10,7 @@ import { authService } from '../../src/features/auth/auth.service';
 import { useAuthStore } from '../../src/store/auth.store';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
-import { Card } from '../../src/components/ui/Card';
+import { GlassCard } from '../../src/components/ui/GlassCard';
 import { toast } from '../../src/components/ui/Toast';
 import { getErrorMessage } from '../../src/lib/error-handler';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
@@ -98,7 +98,7 @@ export default function ProfileScreen() {
         </View>
 
         {/* Account Info */}
-        <Card style={styles.card}>
+        <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>Account</Text>
           <View style={styles.infoRow}>
             <Ionicons name="mail-outline" size={18} color={colors.textMuted} />
@@ -114,10 +114,10 @@ export default function ProfileScreen() {
               <Text style={styles.infoValue}>{memberSince}</Text>
             </View>
           </View>
-        </Card>
+        </GlassCard>
 
         {/* Security */}
-        <Card style={styles.card}>
+        <GlassCard style={styles.card}>
           <Text style={styles.cardTitle}>Security</Text>
           <TouchableOpacity
             style={styles.actionRow}
@@ -166,7 +166,7 @@ export default function ProfileScreen() {
               />
             </View>
           )}
-        </Card>
+        </GlassCard>
 
         {/* Sign Out */}
         <TouchableOpacity

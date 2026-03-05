@@ -13,14 +13,17 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   useTasks, useCreateTask, useUpdateTask, useUpdateTaskStatus, useDeleteTask,
 } from '../../src/features/tasks/tasks.hooks';
+import { tasksService } from '../../src/features/tasks/tasks.service';
 import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
-import { Card } from '../../src/components/ui/Card';
+import { GlassCard } from '../../src/components/ui/GlassCard';
 import { TaskCardSkeleton } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/components/ui/Toast';
 import { useCountdown } from '../../src/hooks/useCountdown';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { Task, TaskCategory, TaskPriority, TaskStatus } from '@personal-os/types';
+import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
+import Reanimated, { SharedValue, useAnimatedStyle, interpolate } from 'react-native-reanimated';
 
 // ─── Schema ───────────────────────────────────────────────────────────────────
 
@@ -29,37 +32,46 @@ const taskSchema = z.object({
   description: z.string().optional(),
   category: z.enum(['work', 'growth', 'personal']),
   priority: z.enum(['low', 'medium', 'high']),
+  recurring: z.boolean().default(false),
+  frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional().nullable(),
 });
 type TaskFormInput = z.infer<typeof taskSchema>;
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const CATEGORIES: { value: TaskCategory; label: string; color: string }[] = [
-  { value: 'work',     label: 'Work',     color: colors.work },
-  { value: 'growth',   label: 'Growth',   color: colors.growth },
+  { value: 'work', label: 'Work', color: colors.work },
+  { value: 'growth', label: 'Growth', color: colors.growth },
   { value: 'personal', label: 'Personal', color: colors.personal },
 ];
 
 const PRIORITIES: { value: TaskPriority; label: string; color: string }[] = [
-  { value: 'low',    label: 'Low',    color: colors.low },
+  { value: 'low', label: 'Low', color: colors.low },
   { value: 'medium', label: 'Medium', color: colors.medium },
-  { value: 'high',   label: 'High',   color: colors.high },
+  { value: 'high', label: 'High', color: colors.high },
 ];
 
 const TABS: { value: TaskCategory | 'all'; label: string }[] = [
-  { value: 'all',      label: 'All' },
-  { value: 'work',     label: 'Work' },
-  { value: 'growth',   label: 'Growth' },
+  { value: 'all', label: 'All' },
+  { value: 'work', label: 'Work' },
+  { value: 'growth', label: 'Growth' },
   { value: 'personal', label: 'Personal' },
+];
+
+const FREQUENCIES: { value: string; label: string }[] = [
+  { value: 'daily', label: 'Daily' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'monthly', label: 'Monthly' },
+  { value: 'yearly', label: 'Yearly' },
 ];
 
 // ─── Countdown Badge ──────────────────────────────────────────────────────────
 
 const URGENCY_COLORS = {
   overdue: colors.danger,
-  urgent:  colors.danger,
-  soon:    colors.warning,
-  normal:  colors.textMuted,
+  urgent: colors.danger,
+  soon: colors.warning,
+  normal: colors.textMuted,
 } as const;
 
 function CountdownBadge({ deadline, status }: { deadline: string | null; status: TaskStatus }) {
@@ -86,50 +98,111 @@ function TaskCard({ task, onToggle, onEdit, onDelete }: {
   const priColor = PRIORITIES.find((p) => p.value === task.priority)?.color ?? colors.textMuted;
   const isDone = task.status === 'done';
 
+  const RightAction = (prog: SharedValue<number>, drag: SharedValue<number>) => {
+    const styleAnimation = useAnimatedStyle(() => {
+      const scale = interpolate(drag.value, [0, -50], [0, 1], 'clamp');
+      return {
+        transform: [{ scale }],
+      };
+    });
+
+    return (
+      <View style={styles.rightAction}>
+        <Reanimated.View style={[styleAnimation, styles.actionIcon]}>
+          <Ionicons name="trash" size={24} color="#fff" />
+        </Reanimated.View>
+      </View>
+    );
+  };
+
+  const LeftAction = (prog: SharedValue<number>, drag: SharedValue<number>) => {
+    const styleAnimation = useAnimatedStyle(() => {
+      const scale = interpolate(drag.value, [0, 50], [0, 1], 'clamp');
+      return {
+        transform: [{ scale }],
+      };
+    });
+
+    return (
+      <View style={[styles.leftAction, isDone && { backgroundColor: colors.warning }]}>
+        <Reanimated.View style={[styleAnimation, styles.actionIcon]}>
+          <Ionicons name={isDone ? "arrow-undo" : "checkmark-done"} size={24} color="#fff" />
+        </Reanimated.View>
+      </View>
+    );
+  };
+
   return (
-    <TouchableOpacity onPress={onEdit} onLongPress={onDelete} activeOpacity={0.85}>
-      <Card style={[styles.taskCard, isDone && styles.taskCardDone]}>
-        <View style={styles.taskRow}>
-          {/* Checkbox */}
-          <TouchableOpacity
-            onPress={onToggle}
-            style={[styles.checkbox, isDone && styles.checkboxDone]}
-          >
-            {isDone && <Ionicons name="checkmark" size={14} color="#fff" />}
-          </TouchableOpacity>
+    <ReanimatedSwipeable
+      friction={2}
+      enableTrackpadTwoFingerGesture
+      rightThreshold={40}
+      leftThreshold={40}
+      renderRightActions={RightAction}
+      renderLeftActions={LeftAction}
+      onSwipeableOpen={(direction) => {
+        if (direction === 'right') {
+          onDelete();
+        } else if (direction === 'left') {
+          onToggle();
+        }
+      }}
+    >
+      <TouchableOpacity onPress={onEdit} activeOpacity={0.85}>
+        <GlassCard style={[styles.taskCard, isDone && styles.taskCardDone]}>
+          <View style={styles.taskRow}>
+            {/* Checkbox */}
+            <TouchableOpacity
+              onPress={onToggle}
+              style={[
+                styles.checkbox,
+                isDone && styles.checkboxDone,
+                task.status === 'in_progress' && styles.checkboxProgress
+              ]}
+            >
+              {isDone && <Ionicons name="checkmark" size={14} color="#fff" />}
+              {task.status === 'in_progress' && <View style={styles.progressInner} />}
+            </TouchableOpacity>
 
-          {/* Content */}
-          <View style={styles.taskBody}>
-            <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
-              {task.title}
-            </Text>
-            {task.description && (
-              <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
-            )}
-            <View style={styles.taskMeta}>
-              <View style={[styles.badge, { backgroundColor: catColor + '22' }]}>
-                <Text style={[styles.badgeText, { color: catColor }]}>{task.category}</Text>
-              </View>
-              <View style={[styles.badge, { backgroundColor: priColor + '22' }]}>
-                <Text style={[styles.badgeText, { color: priColor }]}>{task.priority}</Text>
-              </View>
-              {task.deadline && (
-                <View style={styles.deadlineBadge}>
-                  <Ionicons name="calendar-outline" size={10} color={colors.textMuted} />
-                  <Text style={styles.deadlineText}>
-                    {format(new Date(task.deadline), 'MMM d')}
-                  </Text>
-                </View>
+            {/* Content */}
+            <View style={styles.taskBody}>
+              <Text style={[styles.taskTitle, isDone && styles.taskTitleDone]} numberOfLines={2}>
+                {task.title}
+              </Text>
+              {task.description && (
+                <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
               )}
-              <CountdownBadge deadline={task.deadline ?? null} status={task.status} />
+              <View style={styles.taskMeta}>
+                <View style={[styles.badge, { backgroundColor: catColor + '22' }]}>
+                  <Text style={[styles.badgeText, { color: catColor }]}>{task.category}</Text>
+                </View>
+                <View style={[styles.badge, { backgroundColor: priColor + '22' }]}>
+                  <Text style={[styles.badgeText, { color: priColor }]}>{task.priority}</Text>
+                </View>
+                {task.deadline && (
+                  <View style={styles.deadlineBadge}>
+                    <Ionicons name="calendar-outline" size={10} color={colors.textMuted} />
+                    <Text style={styles.deadlineText}>
+                      {format(new Date(task.deadline), 'MMM d')}
+                    </Text>
+                  </View>
+                )}
+                {task.recurring && (
+                  <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
+                    <Ionicons name="repeat-outline" size={10} color={colors.accentLight} />
+                    <Text style={[styles.badgeText, { color: colors.accentLight }]}>{task.frequency}</Text>
+                  </View>
+                )}
+                <CountdownBadge deadline={task.deadline ?? null} status={task.status} />
+              </View>
             </View>
-          </View>
 
-          {/* Edit hint */}
-          <Ionicons name="pencil-outline" size={14} color={colors.textMuted} />
-        </View>
-      </Card>
-    </TouchableOpacity>
+            {/* Edit hint */}
+            <Ionicons name="pencil-outline" size={14} color={colors.textMuted} />
+          </View>
+        </GlassCard>
+      </TouchableOpacity>
+    </ReanimatedSwipeable>
   );
 }
 
@@ -150,38 +223,46 @@ function TaskModal({ visible, task, onClose }: {
   const { control, handleSubmit, reset, formState: { errors }, watch, setValue } = useForm<TaskFormInput>({
     resolver: zodResolver(taskSchema),
     defaultValues: {
-      title:       task?.title       ?? '',
+      title: task?.title ?? '',
       description: task?.description ?? '',
-      category:    task?.category    ?? 'work',
-      priority:    task?.priority    ?? 'medium',
+      category: task?.category ?? 'work',
+      priority: task?.priority ?? 'medium',
+      recurring: task?.recurring ?? false,
+      frequency: task?.frequency ?? 'weekly',
     },
   });
 
   // Re-populate form when task changes
   useEffect(() => {
     reset({
-      title:       task?.title       ?? '',
+      title: task?.title ?? '',
       description: task?.description ?? '',
-      category:    task?.category    ?? 'work',
-      priority:    task?.priority    ?? 'medium',
+      category: task?.category ?? 'work',
+      priority: task?.priority ?? 'medium',
+      recurring: task?.recurring ?? false,
+      frequency: task?.frequency ?? 'weekly',
     });
     setDeadlineDate(task?.deadline ? new Date(task.deadline) : null);
-  }, [task, visible]);
+  }, [task, visible, reset]);
 
   const selectedCategory = watch('category');
   const selectedPriority = watch('priority');
+  const isRecurring = watch('recurring');
+  const selectedFrequency = watch('frequency');
 
   const onSubmit = async (data: TaskFormInput) => {
     const payload = {
-      title:              data.title,
-      description:        data.description ?? null,
-      category:           data.category,
-      priority:           data.priority,
-      deadline:           deadlineDate ? deadlineDate.toISOString() : null,
-      status:             (task?.status ?? 'todo') as TaskStatus,
-      estimated_minutes:  null,
-      ticket_reference:   null,
-      recurring:          false,
+      title: data.title,
+      description: data.description ?? null,
+      category: data.category,
+      priority: data.priority,
+      deadline: deadlineDate ? deadlineDate.toISOString() : null,
+      status: (task?.status ?? 'todo') as TaskStatus,
+      estimated_minutes: null,
+      ticket_reference: null,
+      recurring: data.recurring,
+      frequency: data.recurring ? (data.frequency ?? null) : null,
+      recurring_parent_id: task?.recurring_parent_id ?? null,
     };
 
     if (isEditing && task) {
@@ -319,6 +400,45 @@ function TaskModal({ visible, task, onClose }: {
             </TouchableOpacity>
           )}
 
+          {/* Recurring Toggle */}
+          <View style={styles.recurrenceRow}>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.fieldLabel}>Recurring Task</Text>
+              <Text style={styles.fieldSublabel}>Repeat this task automatically</Text>
+            </View>
+            <TouchableOpacity
+              onPress={() => setValue('recurring', !isRecurring)}
+              style={[styles.toggleBase, isRecurring && styles.toggleActive]}
+            >
+              <View style={[styles.toggleThumb, isRecurring && styles.toggleThumbActive]} />
+            </TouchableOpacity>
+          </View>
+
+          {isRecurring && (
+            <View style={{ gap: spacing.sm }}>
+              <Text style={styles.fieldLabel}>Frequency</Text>
+              <View style={styles.chipRow}>
+                {FREQUENCIES.map((f) => (
+                  <TouchableOpacity
+                    key={f.value}
+                    onPress={() => setValue('frequency', f.value as any)}
+                    style={[
+                      styles.chip,
+                      selectedFrequency === f.value && {
+                        backgroundColor: colors.accent + '33',
+                        borderColor: colors.accent,
+                      },
+                    ]}
+                  >
+                    <Text style={[styles.chipText, selectedFrequency === f.value && { color: colors.accentLight }]}>
+                      {f.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          )}
+
           <Button
             label={isEditing ? 'Save Changes' : 'Create Task'}
             onPress={handleSubmit(onSubmit)}
@@ -337,20 +457,53 @@ function TaskModal({ visible, task, onClose }: {
 
 export default function TasksScreen() {
   const [activeTab, setActiveTab] = useState<TaskCategory | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showAddModal, setShowAddModal] = useState(false);
   const [editTask, setEditTask] = useState<Task | null>(null);
 
   const { data: tasks, isLoading } = useTasks();
+  const createTask = useCreateTask();
   const updateStatus = useUpdateTaskStatus();
   const deleteTask = useDeleteTask();
 
-  const filtered = tasks?.filter((t) =>
-    activeTab === 'all' ? true : t.category === activeTab
-  ) ?? [];
+  const filtered = tasks?.filter((t) => {
+    const matchesTab = activeTab === 'all' ? true : t.category === activeTab;
+    const matchesSearch = t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (t.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+    return matchesTab && matchesSearch;
+  }) ?? [];
 
-  const handleToggle = (task: Task) => {
-    const next: TaskStatus = task.status === 'done' ? 'todo' : 'done';
-    updateStatus.mutate({ id: task.id, status: next });
+  const handleToggle = async (task: Task) => {
+    let next: TaskStatus = 'todo';
+    if (task.status === 'todo') next = 'in_progress';
+    else if (task.status === 'in_progress') next = 'done';
+    else if (task.status === 'done') next = 'todo';
+
+    await updateStatus.mutateAsync({ id: task.id, status: next });
+
+    // Handle recurrence
+    if (next === 'done' && task.recurring && task.frequency) {
+      const nextDeadline = tasksService.getNextDeadline(
+        task.deadline || new Date(),
+        task.frequency as any
+      );
+
+      await createTask.mutateAsync({
+        title: task.title,
+        description: task.description,
+        category: task.category,
+        priority: task.priority,
+        deadline: nextDeadline,
+        status: 'todo',
+        recurring: true,
+        frequency: task.frequency,
+        recurring_parent_id: task.recurring_parent_id || task.id,
+        estimated_minutes: task.estimated_minutes,
+        ticket_reference: task.ticket_reference,
+      });
+
+      toast.success(`Next instance scheduled for ${format(new Date(nextDeadline), 'MMM d')}`);
+    }
   };
 
   const handleDelete = (task: Task) => {
@@ -365,6 +518,23 @@ export default function TasksScreen() {
       <View style={styles.header}>
         <Text style={styles.screenTitle}>Tasks</Text>
         <Text style={styles.taskCount}>{filtered.length} task{filtered.length !== 1 ? 's' : ''}</Text>
+      </View>
+
+      {/* Search Bar */}
+      <View style={styles.searchContainer}>
+        <Ionicons name="search" size={18} color={colors.textMuted} style={styles.searchIcon} />
+        <TextInput
+          placeholder="Search tasks..."
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          style={styles.searchInput}
+          containerStyle={styles.searchField}
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+            <Ionicons name="close-circle" size={18} color={colors.textMuted} />
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Tabs */}
@@ -449,10 +619,37 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
   },
   screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
-  taskCount:   { fontSize: fontSize.sm, color: colors.textSecondary },
+  taskCount: { fontSize: fontSize.sm, color: colors.textSecondary },
 
-  tabsScroll:     { maxHeight: 44 },
-  tabsContainer:  { paddingHorizontal: spacing.md, gap: spacing.sm },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  searchField: {
+    flex: 1,
+    height: 40,
+    marginBottom: 0,
+  },
+  searchInput: {
+    height: 40,
+    paddingLeft: 36,
+    paddingRight: 36,
+  },
+  searchIcon: {
+    position: 'absolute',
+    left: 24,
+    zIndex: 1,
+  },
+  clearBtn: {
+    position: 'absolute',
+    right: 24,
+    zIndex: 1,
+  },
+
+  tabsScroll: { maxHeight: 44 },
+  tabsContainer: { paddingHorizontal: spacing.md, gap: spacing.sm },
   tab: {
     paddingVertical: spacing.xs,
     paddingHorizontal: spacing.md,
@@ -460,15 +657,15 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
-  tabActive:     { backgroundColor: colors.accent, borderColor: colors.accent },
-  tabText:       { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  tabActive: { backgroundColor: colors.accent, borderColor: colors.accent },
+  tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   tabTextActive: { color: '#fff' },
 
   listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 110 },
 
-  taskCard:     { marginBottom: 0 },
+  taskCard: { marginBottom: 0 },
   taskCardDone: { opacity: 0.55 },
-  taskRow:      { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  taskRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   checkbox: {
     width: 22, height: 22, borderRadius: radius.sm,
     borderWidth: 2, borderColor: colors.border,
@@ -476,15 +673,22 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   checkboxDone: { backgroundColor: colors.accent, borderColor: colors.accent },
-  taskBody:      { flex: 1 },
-  taskTitle:     { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.textPrimary },
+  checkboxProgress: { borderColor: colors.accent },
+  progressInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: colors.accent,
+  },
+  taskBody: { flex: 1 },
+  taskTitle: { fontSize: fontSize.md, fontWeight: fontWeight.medium, color: colors.textPrimary },
   taskTitleDone: { textDecorationLine: 'line-through', color: colors.textMuted },
-  taskDesc:      { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
-  taskMeta:      { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs, flexWrap: 'wrap', alignItems: 'center' },
-  badge:         { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm },
-  badgeText:     { fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
+  taskDesc: { fontSize: fontSize.sm, color: colors.textSecondary, marginTop: 2 },
+  taskMeta: { flexDirection: 'row', gap: spacing.xs, marginTop: spacing.xs, flexWrap: 'wrap', alignItems: 'center' },
+  badge: { paddingHorizontal: 6, paddingVertical: 2, borderRadius: radius.sm, flexDirection: 'row', alignItems: 'center', gap: 2 },
+  badgeText: { fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
   deadlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
-  deadlineText:  { fontSize: 11, color: colors.textMuted },
+  deadlineText: { fontSize: 11, color: colors.textMuted },
   countdownBadge: {
     flexDirection: 'row', alignItems: 'center', gap: 3,
     paddingHorizontal: 5, paddingVertical: 2,
@@ -492,8 +696,33 @@ const styles = StyleSheet.create({
   },
   countdownText: { fontSize: 10, fontWeight: fontWeight.semibold },
 
-  empty:        { alignItems: 'center', paddingTop: spacing.xxl, gap: spacing.sm },
-  emptyText:    { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
+  rightAction: {
+    backgroundColor: colors.danger,
+    justifyContent: 'center',
+    alignItems: 'flex-end',
+    flex: 1,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    height: '100%',
+    paddingRight: 20,
+  },
+  leftAction: {
+    backgroundColor: colors.success,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
+    flex: 1,
+    borderRadius: radius.md,
+    marginBottom: spacing.sm,
+    height: '100%',
+    paddingLeft: 20,
+  },
+  actionIcon: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  empty: { alignItems: 'center', paddingTop: spacing.xxl, gap: spacing.sm },
+  emptyText: { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },
   emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted },
 
   fab: {
@@ -518,7 +747,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  modalTitle:  { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
+  modalTitle: { fontSize: fontSize.xl, fontWeight: fontWeight.bold, color: colors.textPrimary },
   modalScroll: { padding: spacing.lg, gap: spacing.md },
 
   fieldLabel: {
@@ -548,6 +777,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm + 2,
+    marginBottom: spacing.xs,
   },
   deadlineBtnText: { flex: 1, fontSize: fontSize.md, color: colors.textMuted },
 
@@ -558,6 +788,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.accent,
     borderRadius: radius.md,
     marginTop: spacing.xs,
+    marginBottom: spacing.md,
   },
   doneDateBtnText: { color: '#fff', fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
+
+  recurrenceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.03)',
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    marginBottom: spacing.xs,
+  },
+  fieldSublabel: { fontSize: 11, color: colors.textMuted, marginTop: -2 },
+  toggleBase: {
+    width: 44, height: 24, borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 2,
+  },
+  toggleActive: { backgroundColor: colors.accent },
+  toggleThumb: { width: 20, height: 20, borderRadius: 10, backgroundColor: '#fff' },
+  toggleThumbActive: { alignSelf: 'flex-end' },
 });
