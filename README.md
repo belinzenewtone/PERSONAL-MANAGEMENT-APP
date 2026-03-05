@@ -49,6 +49,12 @@ A mobile-first Personal Operations System built with React Native (Expo), Supaba
    cd apps/mobile && npm run android
    ```
 
+### Android build note (Gradle 9+)
+
+`react-native-get-sms-android` still references `jcenter()` in its Gradle file, which fails on newer Gradle versions. This repo includes a `patch-package` fix that swaps `jcenter()` for `mavenCentral()`.
+
+Use the provided `npm run android` script (from `apps/mobile`) so the patch is re-applied before building.
+
 ## Database Setup
 
 Run `supabase/migrations/001_initial_schema.sql` in your Supabase SQL Editor.
