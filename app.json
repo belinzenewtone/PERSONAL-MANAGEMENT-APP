@@ -2,10 +2,18 @@
   "expo": {
     "scheme": "acme",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-local-authentication"
     ],
     "name": "ticketing-system-mobile-app",
     "slug": "ticketing-system-mobile-app",
-    "userInterfaceStyle": "automatic"
+    "userInterfaceStyle": "automatic",
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/REPLACE_WITH_YOUR_PROJECT_ID"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    }
   }
 }
