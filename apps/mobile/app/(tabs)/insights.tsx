@@ -492,7 +492,8 @@ const styles = StyleSheet.create({
   tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   tabTextActive: { color: '#fff' },
 
-  scroll: { paddingHorizontal: spacing.md, paddingBottom: 140, gap: spacing.md },
+  scroll: { paddingHorizontal: spacing.md, paddingBottom: 160, gap: spacing.md },
+  stone: { paddingHorizontal: spacing.md, paddingBottom: 160, gap: spacing.md }, // Just making sure I don't miss anything that looks like scroll padding
 
   // AI Cards
   aiCard: { padding: spacing.md, marginBottom: 0, overflow: 'hidden' },

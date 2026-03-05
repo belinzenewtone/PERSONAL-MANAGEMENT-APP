@@ -722,7 +722,7 @@ const styles = StyleSheet.create({
 
   // FAB
   fab: {
-    position: 'absolute', right: spacing.lg, bottom: 110,
+    position: 'absolute', right: spacing.lg, bottom: 125, // Increased from 110
     width: 60, height: 60, borderRadius: 30, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 },
@@ -756,7 +756,7 @@ const styles = StyleSheet.create({
   fieldLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.bold, textTransform: 'uppercase', marginBottom: -4 },
   chipRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
   chipIcon: { fontSize: 14, marginRight: 4 },
-  contentScroll: { paddingBottom: 140 },
+  contentScroll: { paddingBottom: 160 }, // Increased from 140
   fullWidthCapsule: { width: '100%' },
   eventChipContainer: { marginBottom: 4 },
   chipWrapper: { marginBottom: spacing.xs },

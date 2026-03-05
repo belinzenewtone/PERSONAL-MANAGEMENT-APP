@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, StyleSheet, ViewStyle, TextStyle, StyleProp } from 'react-native';
+import { View, Text, StyleSheet, ViewStyle, TextStyle, StyleProp, Platform } from 'react-native';
 import { colors, radius, spacing, fontSize, fontWeight } from '../../lib/theme';
 
 interface CapsuleProps {
@@ -57,41 +57,39 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         borderRadius: radius.full,
-        paddingHorizontal: spacing.sm + 2,
         alignSelf: 'flex-start',
     },
     sm: {
-        height: 24,
-        minWidth: 50,
+        height: 28, // Increased from 24
+        paddingHorizontal: spacing.sm + 2,
     },
     md: {
-        height: 32,
-        minWidth: 70,
+        height: 36, // Increased from 32
         paddingHorizontal: spacing.md,
     },
     lg: {
-        height: 40,
-        minWidth: 90,
+        height: 44, // Increased from 40
         paddingHorizontal: spacing.lg,
     },
     iconContainer: {
-        marginRight: 4,
+        marginRight: 6,
     },
     text: {
-        fontWeight: fontWeight.bold,
+        fontWeight: fontWeight.semibold, // Switched to semibold for better clarity
         textAlign: 'center',
         includeFontPadding: false,
         textAlignVertical: 'center',
+        lineHeight: Platform.OS === 'ios' ? 0 : undefined, // Fix centering on iOS if needed
     },
     text_sm: {
-        fontSize: 10,
+        fontSize: 11, // Slightly larger
         textTransform: 'uppercase',
         letterSpacing: 0.5,
     },
     text_md: {
-        fontSize: fontSize.xs,
+        fontSize: fontSize.sm, // Slightly larger
     },
     text_lg: {
-        fontSize: fontSize.sm,
+        fontSize: fontSize.md,
     },
 });

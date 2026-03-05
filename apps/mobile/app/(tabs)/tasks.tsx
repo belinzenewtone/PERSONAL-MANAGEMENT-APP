@@ -33,7 +33,7 @@ const taskSchema = z.object({
   description: z.string().optional(),
   category: z.enum(['work', 'growth', 'personal']),
   priority: z.enum(['low', 'medium', 'high']),
-  recurring: z.boolean().default(false),
+  recurring: z.boolean(),
   frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']).optional().nullable(),
 });
 type TaskFormInput = z.infer<typeof taskSchema>;
@@ -546,11 +546,14 @@ export default function TasksScreen() {
           <TouchableOpacity
             key={tab.value}
             onPress={() => setActiveTab(tab.value)}
-            style={[styles.tab, activeTab === tab.value && styles.tabActive]}
+            style={styles.tabWrapper}
           >
-            <Text style={[styles.tabText, activeTab === tab.value && styles.tabTextActive]}>
-              {tab.label}
-            </Text>
+            <Capsule
+              label={tab.label}
+              color={colors.accent}
+              variant={activeTab === tab.value ? 'solid' : 'outline'}
+              size="sm"
+            />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -647,19 +650,9 @@ const styles = StyleSheet.create({
   },
 
   tabsScroll: { maxHeight: 44 },
-  tabsContainer: { paddingHorizontal: spacing.md, gap: spacing.sm },
-  tab: {
-    paddingVertical: spacing.xs,
-    paddingHorizontal: spacing.md,
-    borderRadius: radius.full,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  tabActive: { backgroundColor: colors.accent, borderColor: colors.accent },
-  tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
-  tabTextActive: { color: '#fff' },
-
-  listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 140 },
+  tabsContainer: { paddingHorizontal: spacing.md, paddingVertical: 2 },
+  tabWrapper: { marginRight: spacing.xs },
+  listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 160 },
 
   taskCard: { marginBottom: 0 },
   taskCardDone: { opacity: 0.55 },
@@ -726,8 +719,8 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: 110,
-    width: 56, height: 56, borderRadius: 28,
+    bottom: 125, // Increased from 110
+    width: 60, height: 60, borderRadius: 30,
     backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.accent,

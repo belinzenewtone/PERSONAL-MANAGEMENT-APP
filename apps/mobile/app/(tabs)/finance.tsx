@@ -702,7 +702,8 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   filterChipTextActive: { color: '#fff' },
 
-  scroll: { padding: spacing.md, paddingBottom: 140 },
+  scroll: { padding: spacing.md, paddingBottom: 160 },
+  Stone: { padding: spacing.md, paddingBottom: 160 }, // This line seems to have been mangled in previous edits or I'm misreading. Let's look at the TargetContent.
 
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   summaryCard: { width: '47.5%', alignItems: 'flex-start', gap: 4 },
@@ -758,8 +759,8 @@ const styles = StyleSheet.create({
   emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
 
   fab: {
-    position: 'absolute', right: spacing.lg, bottom: 110,
-    width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent,
+    position: 'absolute', right: spacing.lg, bottom: 125, // Increased from 110
+    width: 60, height: 60, borderRadius: 30, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,

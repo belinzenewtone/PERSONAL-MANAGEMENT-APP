@@ -194,7 +194,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.md, paddingBottom: 140 },
+  scroll: { padding: spacing.md, paddingBottom: 160 },
 
   header: { paddingTop: spacing.sm, marginBottom: spacing.lg },
   screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
@@ -221,17 +221,17 @@ const styles = StyleSheet.create({
     color: colors.textSecondary, marginBottom: spacing.xs,
   },
 
-  infoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  infoRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
   rowBorder: {
-    borderTopWidth: 1, borderTopColor: colors.border,
-    paddingTop: spacing.sm, marginTop: spacing.xs,
+    borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)',
+    paddingTop: spacing.md, marginTop: spacing.xs,
   },
-  infoContent: { flex: 1 },
-  infoLabel: { fontSize: fontSize.xs, color: colors.textMuted },
-  infoValue: { fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: fontWeight.medium, marginTop: 1 },
+  infoContent: { flex: 1, gap: 2 },
+  infoLabel: { fontSize: 11, color: colors.textMuted, textTransform: 'uppercase', fontWeight: fontWeight.bold, letterSpacing: 0.5 },
+  infoValue: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: fontWeight.medium },
 
-  actionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  actionLabel: { flex: 1, fontSize: fontSize.sm, color: colors.textPrimary, fontWeight: fontWeight.medium },
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: 4 },
+  actionLabel: { flex: 1, fontSize: fontSize.md, color: colors.textPrimary, fontWeight: fontWeight.medium },
 
   pwForm: { marginTop: spacing.md, gap: spacing.sm },
 
