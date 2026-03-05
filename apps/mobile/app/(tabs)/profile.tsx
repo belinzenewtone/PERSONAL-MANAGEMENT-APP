@@ -14,6 +14,7 @@ import { GlassCard } from '../../src/components/ui/GlassCard';
 import { toast } from '../../src/components/ui/Toast';
 import { getErrorMessage } from '../../src/lib/error-handler';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
+import { Capsule } from '../../src/components/ui/Capsule';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -91,10 +92,14 @@ export default function ProfileScreen() {
             <Text style={styles.avatarText}>{initials}</Text>
           </View>
           <Text style={styles.emailText}>{email}</Text>
-          <View style={styles.verifiedBadge}>
-            <Ionicons name="shield-checkmark" size={12} color={colors.success} />
-            <Text style={styles.verifiedText}>Verified Account</Text>
-          </View>
+          <Capsule
+            label="Verified Account"
+            color={colors.success}
+            variant="subtle"
+            size="sm"
+            icon={<Ionicons name="shield-checkmark" size={12} color={colors.success} />}
+            style={styles.verifiedBadgeCapsule}
+          />
         </View>
 
         {/* Account Info */}
@@ -189,7 +194,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.md, paddingBottom: 110 },
+  scroll: { padding: spacing.md, paddingBottom: 140 },
 
   header: { paddingTop: spacing.sm, marginBottom: spacing.lg },
   screenTitle: { fontSize: fontSize.xxl, fontWeight: fontWeight.bold, color: colors.textPrimary },
@@ -206,14 +211,9 @@ const styles = StyleSheet.create({
   },
   avatarText: { fontSize: 28, fontWeight: fontWeight.bold, color: '#fff' },
   emailText: { fontSize: fontSize.md, color: colors.textPrimary, fontWeight: fontWeight.medium },
-  verifiedBadge: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
+  verifiedBadgeCapsule: {
     marginTop: spacing.xs,
-    backgroundColor: colors.success + '22',
-    paddingHorizontal: spacing.sm, paddingVertical: 3,
-    borderRadius: radius.full,
   },
-  verifiedText: { fontSize: fontSize.xs, color: colors.success, fontWeight: fontWeight.medium },
 
   card: { marginBottom: spacing.md, gap: spacing.sm },
   cardTitle: {

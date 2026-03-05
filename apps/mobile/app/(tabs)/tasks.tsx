@@ -21,6 +21,7 @@ import { TaskCardSkeleton } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/components/ui/Toast';
 import { useCountdown } from '../../src/hooks/useCountdown';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
+import { Capsule } from '../../src/components/ui/Capsule';
 import type { Task, TaskCategory, TaskPriority, TaskStatus } from '@personal-os/types';
 import ReanimatedSwipeable from 'react-native-gesture-handler/ReanimatedSwipeable';
 import Reanimated, { SharedValue, useAnimatedStyle, interpolate } from 'react-native-reanimated';
@@ -173,12 +174,8 @@ function TaskCard({ task, onToggle, onEdit, onDelete }: {
                 <Text style={styles.taskDesc} numberOfLines={1}>{task.description}</Text>
               )}
               <View style={styles.taskMeta}>
-                <View style={[styles.badge, { backgroundColor: catColor + '22' }]}>
-                  <Text style={[styles.badgeText, { color: catColor }]}>{task.category}</Text>
-                </View>
-                <View style={[styles.badge, { backgroundColor: priColor + '22' }]}>
-                  <Text style={[styles.badgeText, { color: priColor }]}>{task.priority}</Text>
-                </View>
+                <Capsule label={task.category} color={catColor} />
+                <Capsule label={task.priority} color={priColor} />
                 {task.deadline && (
                   <View style={styles.deadlineBadge}>
                     <Ionicons name="calendar-outline" size={10} color={colors.textMuted} />
@@ -188,10 +185,11 @@ function TaskCard({ task, onToggle, onEdit, onDelete }: {
                   </View>
                 )}
                 {task.recurring && (
-                  <View style={[styles.badge, { backgroundColor: colors.accent + '22' }]}>
-                    <Ionicons name="repeat-outline" size={10} color={colors.accentLight} />
-                    <Text style={[styles.badgeText, { color: colors.accentLight }]}>{task.frequency}</Text>
-                  </View>
+                  <Capsule
+                    label={task.frequency || ''}
+                    color={colors.accentLight}
+                    icon={<Ionicons name="repeat-outline" size={10} color={colors.accentLight} />}
+                  />
                 )}
                 <CountdownBadge deadline={task.deadline ?? null} status={task.status} />
               </View>
@@ -661,7 +659,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   tabTextActive: { color: '#fff' },
 
-  listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 110 },
+  listContent: { padding: spacing.md, gap: spacing.sm, paddingBottom: 140 },
 
   taskCard: { marginBottom: 0 },
   taskCardDone: { opacity: 0.55 },
@@ -728,7 +726,7 @@ const styles = StyleSheet.create({
   fab: {
     position: 'absolute',
     right: spacing.lg,
-    bottom: 100,
+    bottom: 110,
     width: 56, height: 56, borderRadius: 28,
     backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',

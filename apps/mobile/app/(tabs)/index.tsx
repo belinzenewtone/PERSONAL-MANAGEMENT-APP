@@ -18,6 +18,7 @@ import { GlassCard } from '../../src/components/ui/GlassCard';
 import { HomeSkeletonList } from '../../src/components/ui/Skeleton';
 import { SectionErrorBoundary } from '../../src/components/ui/ErrorBoundary';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
+import { Capsule } from '../../src/components/ui/Capsule';
 import type { Task } from '@personal-os/types';
 
 const PRIORITY_COLOR: Record<string, string> = {
@@ -46,11 +47,12 @@ function TaskPreviewItem({ task }: { task: Task }) {
           </Text>
         )}
       </View>
-      <View style={[styles.priorityBadge, { backgroundColor: PRIORITY_COLOR[task.priority] + '22' }]}>
-        <Text style={[styles.priorityText, { color: PRIORITY_COLOR[task.priority] }]}>
-          {task.priority}
-        </Text>
-      </View>
+      <Capsule
+        label={task.priority}
+        color={PRIORITY_COLOR[task.priority]}
+        variant="subtle"
+        size="sm"
+      />
     </View>
   );
 }
@@ -227,7 +229,7 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  scroll: { padding: spacing.md, paddingBottom: spacing.xxl },
+  scroll: { padding: spacing.md, paddingBottom: 140 },
 
   header: {
     flexDirection: 'row',

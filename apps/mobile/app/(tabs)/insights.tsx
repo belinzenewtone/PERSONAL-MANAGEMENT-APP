@@ -20,6 +20,7 @@ import { TextInput } from '../../src/components/ui/TextInput';
 import { Button } from '../../src/components/ui/Button';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
+import { Capsule } from '../../src/components/ui/Capsule';
 import type { LearningSession } from '@personal-os/types';
 
 const { width: W } = Dimensions.get('window');
@@ -61,9 +62,12 @@ function AiCard({ card }: { card: InsightCard }) {
           <Text style={styles.aiCardIcon}>{card.icon ?? TYPE_ICON[card.type]}</Text>
           <View style={styles.aiCardMeta}>
             <Text style={styles.aiCardTitle}>{card.title}</Text>
-            <View style={[styles.priorityPill, { backgroundColor: priColor + '33' }]}>
-              <Text style={[styles.priorityPillText, { color: priColor }]}>{card.priority}</Text>
-            </View>
+            <Capsule
+              label={card.priority}
+              color={priColor}
+              variant="subtle"
+              size="sm"
+            />
           </View>
           <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={16} color={colors.textMuted} />
         </View>
@@ -488,7 +492,7 @@ const styles = StyleSheet.create({
   tabText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   tabTextActive: { color: '#fff' },
 
-  scroll: { paddingHorizontal: spacing.md, paddingBottom: 100, gap: spacing.md },
+  scroll: { paddingHorizontal: spacing.md, paddingBottom: 140, gap: spacing.md },
 
   // AI Cards
   aiCard: { padding: spacing.md, marginBottom: 0, overflow: 'hidden' },

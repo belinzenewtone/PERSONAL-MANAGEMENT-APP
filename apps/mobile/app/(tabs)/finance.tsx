@@ -29,6 +29,7 @@ import { SmsImportModal } from '../../src/components/finance/SmsImportModal';
 import { FinanceSkeletonList } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/components/ui/Toast';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
+import { Capsule } from '../../src/components/ui/Capsule';
 import type { Transaction, TransactionType, TransactionSource } from '@personal-os/types';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -252,7 +253,7 @@ function BudgetModal({ visible, category, currentAmount, onClose, onSave }: {
             autoFocus
           />
           <View style={styles.modalActions}>
-            <Button label="Cancel" variant="outline" onPress={onClose} style={{ flex: 1 }} />
+            <Button label="Cancel" variant="secondary" onPress={onClose} style={{ flex: 1 }} />
             <Button label="Save" onPress={() => onSave(Number(amount))} style={{ flex: 1 }} />
           </View>
         </GlassCard>
@@ -397,9 +398,15 @@ function TransactionFormModal({ visible, editTx, onClose }: {
                 <TouchableOpacity
                   key={cat}
                   onPress={() => setValue('category', cat)}
-                  style={[styles.catChip, selected && { backgroundColor: color + '33', borderColor: color }]}
+                  style={styles.catChipWrapper}
                 >
-                  <Text style={[styles.catChipText, selected && { color }]}>{cat}</Text>
+                  <Capsule
+                    label={cat}
+                    color={color}
+                    variant={selected ? 'subtle' : 'outline'}
+                    size="md"
+                    style={styles.fullWidthCapsule}
+                  />
                 </TouchableOpacity>
               );
             })}
@@ -412,10 +419,15 @@ function TransactionFormModal({ visible, editTx, onClose }: {
               <TouchableOpacity
                 key={s.value}
                 onPress={() => setValue('source', s.value)}
-                style={[styles.chip, source === s.value && { backgroundColor: colors.accent + '33', borderColor: colors.accent }]}
+                style={styles.chipWrapper}
               >
-                <Text style={styles.chipIcon}>{s.icon}</Text>
-                <Text style={[styles.chipText, source === s.value && { color: colors.accentLight }]}>{s.label}</Text>
+                <Capsule
+                  label={s.label}
+                  color={colors.accent}
+                  variant={source === s.value ? 'subtle' : 'outline'}
+                  size="md"
+                  icon={<Text style={styles.chipIcon}>{s.icon}</Text>}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -563,11 +575,14 @@ export default function FinanceScreen() {
           <TouchableOpacity
             key={f.value}
             onPress={() => setPeriod(f.value)}
-            style={[styles.filterChip, period === f.value && styles.filterChipActive]}
+            style={styles.filterChipWrapper}
           >
-            <Text style={[styles.filterChipText, period === f.value && styles.filterChipTextActive]}>
-              {f.label}
-            </Text>
+            <Capsule
+              label={f.label}
+              color={colors.accent}
+              variant={period === f.value ? 'solid' : 'outline'}
+              size="sm"
+            />
           </TouchableOpacity>
         ))}
       </ScrollView>
@@ -687,7 +702,7 @@ const styles = StyleSheet.create({
   filterChipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   filterChipTextActive: { color: '#fff' },
 
-  scroll: { padding: spacing.md, paddingBottom: 100 },
+  scroll: { padding: spacing.md, paddingBottom: 140 },
 
   summaryGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginBottom: spacing.md },
   summaryCard: { width: '47.5%', alignItems: 'flex-start', gap: 4 },
@@ -743,13 +758,13 @@ const styles = StyleSheet.create({
   emptySubtext: { fontSize: fontSize.sm, color: colors.textMuted, marginTop: spacing.xs },
 
   fab: {
-    position: 'absolute', right: spacing.lg, bottom: spacing.lg,
+    position: 'absolute', right: spacing.lg, bottom: 110,
     width: 56, height: 56, borderRadius: 28, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.accent, shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4, shadowRadius: 8, elevation: 8,
   },
-  fabIcon: { fontSize: 28, color: '#fff', lineHeight: 32 },
+  fabIcon: { fontSize: 28, color: '#fff' },
 
   modalOverlay: {
     flex: 1,
@@ -782,18 +797,25 @@ const styles = StyleSheet.create({
 
   fieldLabel: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
   chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.xs },
-  catChip: {
-    paddingVertical: 6, paddingHorizontal: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)',
+  summaryCardIncome: { backgroundColor: 'rgba(34, 197, 94, 0.05)', borderColor: 'rgba(34, 197, 94, 0.2)' },
+  summaryCardExpense: { backgroundColor: 'rgba(239, 68, 68, 0.05)', borderColor: 'rgba(239, 68, 68, 0.2)' },
+  summaryCardBalance: { backgroundColor: 'rgba(59, 130, 246, 0.05)', borderColor: 'rgba(59, 130, 246, 0.2)' },
+  summaryCardSavings: { backgroundColor: 'rgba(245, 158, 11, 0.05)', borderColor: 'rgba(245, 158, 11, 0.2)' },
+
+  catChipWrapper: {
+    marginBottom: spacing.xs,
   },
-  catChipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.medium },
-  chipRow: { flexDirection: 'row', gap: spacing.sm },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 4,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.md,
-    borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)',
+  fullWidthCapsule: {
+    minWidth: 80,
   },
-  chipIcon: { fontSize: 14 },
-  chipText: { fontSize: fontSize.sm, color: colors.textSecondary, fontWeight: fontWeight.medium },
+  chipWrapper: {
+    marginBottom: spacing.xs,
+  },
+  chipRow: { flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' },
+  chipIcon: { fontSize: 14, marginRight: 4 },
+  filterChipWrapper: {
+    justifyContent: 'center',
+    marginRight: spacing.sm,
+  },
   errorText: { fontSize: fontSize.xs, color: colors.danger },
 });

@@ -19,6 +19,7 @@ import { Button } from '../../src/components/ui/Button';
 import { TextInput } from '../../src/components/ui/TextInput';
 import { GlassCard } from '../../src/components/ui/GlassCard';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
+import { Capsule } from '../../src/components/ui/Capsule';
 import type { CalendarEvent, EventType, Task } from '@personal-os/types';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -61,13 +62,13 @@ function toLocalDatetimeString(date: Date): string {
 function EventChip({ event, onPress }: { event: CalendarEvent; onPress: () => void }) {
   const cfg = EVENT_TYPE_CONFIG[event.type];
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      style={[styles.eventChip, { backgroundColor: cfg.color + '22', borderLeftColor: cfg.color }]}
-    >
-      <Text style={[styles.eventChipText, { color: cfg.color }]} numberOfLines={1}>
-        {event.title}
-      </Text>
+    <TouchableOpacity onPress={onPress} style={styles.eventChipContainer}>
+      <Capsule
+        label={event.title}
+        color={cfg.color}
+        size="sm"
+        style={styles.fullWidthCapsule}
+      />
     </TouchableOpacity>
   );
 }
@@ -398,10 +399,15 @@ function EventFormModal({ visible, initialDate, editEvent, onClose }: {
               <TouchableOpacity
                 key={type}
                 onPress={() => setValue('type', type)}
-                style={[styles.chip, selectedType === type && { backgroundColor: cfg.color + '33', borderColor: cfg.color }]}
+                style={styles.chipWrapper}
               >
-                <Text style={styles.chipIcon}>{cfg.icon}</Text>
-                <Text style={[styles.chipText, selectedType === type && { color: cfg.color }]}>{cfg.label}</Text>
+                <Capsule
+                  label={cfg.label}
+                  color={cfg.color}
+                  variant={selectedType === type ? 'subtle' : 'outline'}
+                  size="md"
+                  icon={<Text style={styles.chipIcon}>{cfg.icon}</Text>}
+                />
               </TouchableOpacity>
             ))}
           </View>
@@ -536,7 +542,7 @@ export default function CalendarScreen() {
           <ActivityIndicator color={colors.accent} />
         </View>
       ) : (
-        <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
+        <ScrollView showsVerticalScrollIndicator={false} style={styles.content} contentContainerStyle={styles.contentScroll}>
           {viewMode === 'Month' && (
             <>
               <MonthView
@@ -556,19 +562,18 @@ export default function CalendarScreen() {
                     <EventChip key={ev.id} event={ev} onPress={() => setDetailEvent(ev)} />
                   ))}
                   {selectedDayTasks.map((task) => (
-                    <View
+                    <TouchableOpacity
                       key={task.id}
-                      style={[styles.taskChip, task.status === 'done' && styles.taskChipDone]}
+                      style={[styles.taskChipWrapper, task.status === 'done' && styles.taskChipDone]}
                     >
-                      <View style={[styles.taskChipDot, { backgroundColor: colors.warning }]} />
-                      <Text
-                        style={[styles.taskChipText, task.status === 'done' && styles.taskChipTextDone]}
-                        numberOfLines={1}
-                      >
-                        {task.title}
-                      </Text>
-                      <Text style={styles.taskChipBadge}>{task.priority}</Text>
-                    </View>
+                      <Capsule
+                        label={task.title}
+                        color={colors.warning}
+                        size="sm"
+                        style={styles.fullWidthCapsule}
+                        icon={<View style={styles.taskChipDot} />}
+                      />
+                    </TouchableOpacity>
                   ))}
                 </View>
               )}
@@ -705,7 +710,7 @@ const styles = StyleSheet.create({
   weekDayEvents: { gap: 4 },
 
   // Day
-  dayView: { paddingHorizontal: spacing.md, paddingBottom: 100 },
+  dayView: { paddingHorizontal: spacing.md, paddingBottom: 140 },
   dayHourRow: { flexDirection: 'row', minHeight: 64, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.05)' },
   dayHourLabel: { width: 48, paddingTop: spacing.xs, fontSize: 10, color: colors.textMuted, fontWeight: fontWeight.semibold },
   dayHourLabelPast: { opacity: 0.3 },
@@ -717,7 +722,7 @@ const styles = StyleSheet.create({
 
   // FAB
   fab: {
-    position: 'absolute', right: spacing.lg, bottom: spacing.lg,
+    position: 'absolute', right: spacing.lg, bottom: 110,
     width: 60, height: 60, borderRadius: 30, backgroundColor: colors.accent,
     alignItems: 'center', justifyContent: 'center',
     shadowColor: colors.accent, shadowOffset: { width: 0, height: 6 },
@@ -750,11 +755,10 @@ const styles = StyleSheet.create({
   // Form
   fieldLabel: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.bold, textTransform: 'uppercase', marginBottom: -4 },
   chipRow: { flexDirection: 'row', gap: spacing.xs, flexWrap: 'wrap' },
-  chip: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    paddingVertical: spacing.xs, paddingHorizontal: spacing.sm,
-    borderRadius: radius.full, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', backgroundColor: 'rgba(255,255,255,0.03)',
-  },
-  chipIcon: { fontSize: 14 },
-  chipText: { fontSize: fontSize.xs, color: colors.textSecondary, fontWeight: fontWeight.bold },
+  chipIcon: { fontSize: 14, marginRight: 4 },
+  contentScroll: { paddingBottom: 140 },
+  fullWidthCapsule: { width: '100%' },
+  eventChipContainer: { marginBottom: 4 },
+  chipWrapper: { marginBottom: spacing.xs },
+  taskChipWrapper: { marginBottom: 4 },
 });

@@ -1,15 +1,12 @@
+import React, { memo } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { Home, CheckSquare, Calendar, Wallet, BarChart2, User } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BlurView } from 'expo-blur';
 
-export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
+export const FloatingTabBar = memo(({ state, descriptors, navigation }: BottomTabBarProps) => {
     const insets = useSafeAreaInsets();
-
-    // insets.bottom gives the height of the home indicator (iOS) or on-screen navigation buttons (Android).
-    // By adding 16 to it, we ensure the bar always floats 16px ABOVE the system navigation area,
-    // making it perfectly suitable for both gestures and button-based navigation.
     const bottomOffset = insets.bottom + 16;
 
     const icons: Record<string, any> = {
@@ -58,12 +55,12 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
                         style={[styles.tabButton, isFocused && styles.tabButtonActive]}
                     >
                         <Icon
-                            size={22}
-                            color={isFocused ? '#fff' : 'rgba(255,255,255,0.45)'}
+                            size={20}
+                            color={isFocused ? '#fff' : 'rgba(255,255,255,0.4)'}
                             strokeWidth={isFocused ? 2.5 : 2}
                         />
                         {isFocused && (
-                            <Text style={styles.label}>{label as string}</Text>
+                            <Text style={styles.label} numberOfLines={1}>{label as string}</Text>
                         )}
                     </TouchableOpacity>
                 );
@@ -72,10 +69,10 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
     );
 
     return (
-        <View style={[styles.container, { bottom: bottomOffset }]}>
+        <View style={[styles.container, { bottom: bottomOffset }]} pointerEvents="box-none">
             {Platform.OS === 'ios' ? (
                 <BlurView
-                    intensity={60}
+                    intensity={65}
                     tint="dark"
                     style={styles.blurWrapper}
                 >
@@ -88,50 +85,52 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
             )}
         </View>
     );
-}
+});
 
 const styles = StyleSheet.create({
     container: {
         position: 'absolute',
-        left: 10,
-        right: 10,
+        left: 14,
+        right: 14,
         backgroundColor: 'transparent',
         alignItems: 'center',
+        zIndex: 1000,
     },
     blurWrapper: {
-        borderRadius: 40,
+        borderRadius: 32,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(255, 255, 255, 0.10)',
+        borderColor: 'rgba(255, 255, 255, 0.12)',
         width: '100%',
     },
     androidGlass: {
-        backgroundColor: 'rgba(16, 24, 48, 0.88)',
+        backgroundColor: 'rgba(12, 12, 16, 0.92)',
     },
     pill: {
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-around',
-        paddingHorizontal: 4,
-        paddingVertical: 8,
+        justifyContent: 'space-between',
+        paddingHorizontal: 6,
+        paddingVertical: 10,
     },
     tabButton: {
         alignItems: 'center',
         justifyContent: 'center',
-        paddingHorizontal: 8,
+        paddingHorizontal: 6,
         paddingVertical: 8,
-        borderRadius: 30,
+        borderRadius: 24,
         minWidth: 44,
+        flexDirection: 'row',
     },
     tabButtonActive: {
         backgroundColor: 'rgba(255, 255, 255, 0.12)',
-        flexDirection: 'row',
-        gap: 4,
+        paddingHorizontal: 12,
+        gap: 6,
     },
     label: {
-        fontSize: 10,
-        fontWeight: '600',
+        fontSize: 11,
+        fontWeight: '700',
         color: '#fff',
-        letterSpacing: 0.2,
+        letterSpacing: 0.1,
     },
 });
