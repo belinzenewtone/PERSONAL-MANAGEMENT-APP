@@ -8,6 +8,7 @@ import { queryClient } from '../src/lib/query-client';
 import { supabase } from '../src/lib/supabase';
 import { useAuthStore } from '../src/store/auth.store';
 import { registerSmsBackgroundTask } from '../src/features/finance/sms-background.task';
+import { requestNotificationPermissions } from '../src/lib/notifications';
 import { ErrorBoundary } from '../src/components/ui/ErrorBoundary';
 import { OfflineBanner } from '../src/components/ui/OfflineBanner';
 import { ToastContainer } from '../src/components/ui/Toast';
@@ -29,6 +30,8 @@ export default function RootLayout() {
     if (Platform.OS === 'android') {
       registerSmsBackgroundTask().catch(() => {});
     }
+
+    requestNotificationPermissions().catch(() => {});
 
     return () => subscription.unsubscribe();
   }, []);

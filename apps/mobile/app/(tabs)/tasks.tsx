@@ -18,6 +18,7 @@ import { TextInput } from '../../src/components/ui/TextInput';
 import { Card } from '../../src/components/ui/Card';
 import { TaskCardSkeleton } from '../../src/components/ui/Skeleton';
 import { toast } from '../../src/components/ui/Toast';
+import { useCountdown } from '../../src/hooks/useCountdown';
 import { colors, spacing, fontSize, fontWeight, radius } from '../../src/lib/theme';
 import type { Task, TaskCategory, TaskPriority, TaskStatus } from '@personal-os/types';
 
@@ -51,6 +52,27 @@ const TABS: { value: TaskCategory | 'all'; label: string }[] = [
   { value: 'growth',   label: 'Growth' },
   { value: 'personal', label: 'Personal' },
 ];
+
+// ─── Countdown Badge ──────────────────────────────────────────────────────────
+
+const URGENCY_COLORS = {
+  overdue: colors.danger,
+  urgent:  colors.danger,
+  soon:    colors.warning,
+  normal:  colors.textMuted,
+} as const;
+
+function CountdownBadge({ deadline, status }: { deadline: string | null; status: TaskStatus }) {
+  const { label, urgency } = useCountdown(status === 'done' ? null : deadline);
+  if (!label) return null;
+  const color = URGENCY_COLORS[urgency];
+  return (
+    <View style={[styles.countdownBadge, { borderColor: color + '66', backgroundColor: color + '15' }]}>
+      <Ionicons name="time-outline" size={10} color={color} />
+      <Text style={[styles.countdownText, { color }]}>{label}</Text>
+    </View>
+  );
+}
 
 // ─── Task Card ────────────────────────────────────────────────────────────────
 
@@ -99,6 +121,7 @@ function TaskCard({ task, onToggle, onEdit, onDelete }: {
                   </Text>
                 </View>
               )}
+              <CountdownBadge deadline={task.deadline ?? null} status={task.status} />
             </View>
           </View>
 
@@ -462,6 +485,12 @@ const styles = StyleSheet.create({
   badgeText:     { fontSize: 10, fontWeight: fontWeight.semibold, textTransform: 'capitalize' },
   deadlineBadge: { flexDirection: 'row', alignItems: 'center', gap: 3 },
   deadlineText:  { fontSize: 11, color: colors.textMuted },
+  countdownBadge: {
+    flexDirection: 'row', alignItems: 'center', gap: 3,
+    paddingHorizontal: 5, paddingVertical: 2,
+    borderRadius: radius.sm, borderWidth: 1,
+  },
+  countdownText: { fontSize: 10, fontWeight: fontWeight.semibold },
 
   empty:        { alignItems: 'center', paddingTop: spacing.xxl, gap: spacing.sm },
   emptyText:    { fontSize: fontSize.lg, fontWeight: fontWeight.semibold, color: colors.textSecondary },

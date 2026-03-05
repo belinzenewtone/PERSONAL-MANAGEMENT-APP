@@ -26,7 +26,10 @@
         "android.permission.READ_SMS",
         "android.permission.RECEIVE_SMS",
         "android.permission.RECEIVE_BOOT_COMPLETED",
-        "android.permission.WAKE_LOCK"
+        "android.permission.WAKE_LOCK",
+        "android.permission.POST_NOTIFICATIONS",
+        "android.permission.SCHEDULE_EXACT_ALARM",
+        "android.permission.USE_EXACT_ALARM"
       ]
     },
     "web": {
@@ -43,7 +46,15 @@
       "expo-router",
       "expo-secure-store",
       "expo-background-fetch",
-      "expo-task-manager"
+      "expo-task-manager",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#1877F2",
+          "sounds": []
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
