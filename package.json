@@ -1,0 +1,33 @@
+{
+  "name": "personal-os",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "turbo build",
+    "check:file-size": "node tools/check-file-size.mjs",
+    "check:feature-readmes": "node tools/check-feature-readmes.mjs",
+    "check:routes": "node tools/check-route-thinness.mjs",
+    "check:ui-boundaries": "node tools/check-ui-boundaries.mjs",
+    "check:rules": "npm run check:file-size && npm run check:routes && npm run check:feature-readmes && npm run check:ui-boundaries",
+    "dev": "turbo dev",
+    "lint": "turbo lint",
+    "test:logic": "tsx --test apps/mobile/src/features/finance/budget-insights.service.test.ts apps/mobile/src/features/recurring/recurring.utils.test.ts",
+    "typecheck": "turbo typecheck",
+    "mobile": "turbo dev --filter=mobile",
+    "postinstall": "patch-package"
+  },
+  "devDependencies": {
+    "patch-package": "^8.0.1",
+    "supabase": "^2.78.1",
+    "tsx": "^4.21.0",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.3"
+  },
+  "packageManager": "npm@11.6.0",
+  "engines": {
+    "node": ">=18"
+  }
+}

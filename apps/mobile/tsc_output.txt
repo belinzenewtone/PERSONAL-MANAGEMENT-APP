@@ -1,0 +1,6 @@
+index.ts(3,17): error TS1261: Already included file name 'C:/Users/belinze.newtone/Documents/PERSONAL-MANAGEMENT-APP/apps/mobile/App/index.tsx' differs from file name 'C:/Users/belinze.newtone/Documents/PERSONAL-MANAGEMENT-APP/apps/mobile/app/index.tsx' only in casing.
+  The file is in the program because:
+    Imported via './App' from file 'C:/Users/belinze.newtone/Documents/PERSONAL-MANAGEMENT-APP/apps/mobile/index.ts'
+    Matched by include pattern '**/*.tsx' in 'C:/Users/belinze.newtone/Documents/PERSONAL-MANAGEMENT-APP/apps/mobile/tsconfig.json'
+src/lib/notifications.ts(24,41): error TS2322: Type 'Promise<{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: true; }>' is not assignable to type 'Promise<NotificationBehavior>'.
+  Type '{ shouldShowAlert: true; shouldPlaySound: true; shouldSetBadge: true; }' is missing the following properties from type 'NotificationBehavior': shouldShowBanner, shouldShowList

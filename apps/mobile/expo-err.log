@@ -1,0 +1,20 @@
+Error: GetEnv.NoBoolean: true  is not a boolean.
+Error: GetEnv.NoBoolean: true  is not a boolean.
+    at Object.boolish (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\getenv\index.js:70:15)
+    at C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\getenv\index.js:84:27
+    at Env.CI (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\utils\env.ts:41:19)
+    at withExtendedResolver (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\metro\withMetroMultiPlatform.ts:244:28)
+    at withMetroMultiPlatformAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\metro\withMetroMultiPlatform.ts:971:10)
+    at loadMetroConfigAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\metro\instantiateMetro.ts:242:12)
+    at instantiateMetroAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\metro\instantiateMetro.ts:303:7)
+    at MetroBundlerDevServer.startImplementationAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\metro\MetroBundlerDevServer.ts:1249:69)
+    at MetroBundlerDevServer.startAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\BundlerDevServer.ts:163:18)
+    at DevServerManager.startAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\server\DevServerManager.ts:186:7)
+    at startAsync (C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\node_modules\@expo\cli\src\start\startAsync.ts:104:3)
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\apps\mobile
+npm error workspace mobile@1.0.0
+npm error location C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\apps\mobile
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c expo start --tunnel

@@ -1,0 +1,9 @@
+
+> mobile@1.0.0 start
+> expo start --tunnel
+
+env: load .env
+env: export EXPO_PUBLIC_SUPABASE_ANON_KEY EXPO_PUBLIC_SUPABASE_URL
+Starting project at C:\Users\belinze.newtone\Downloads\PERSONAL-MANAGEMENT-APP-master\PERSONAL-MANAGEMENT-APP-master\apps\mobile
+Using src/app as the root directory for Expo Router.
+Expo Autolinking module resolution enabled
